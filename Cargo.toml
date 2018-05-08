@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Cameron McHenry <camchenry@users.noreply.github.com>"]
 
 [dependencies]
+clap = "2.31"
