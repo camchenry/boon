@@ -5,3 +5,5 @@ authors = ["Cameron McHenry <camchenry@users.noreply.github.com>"]
 
 [dependencies]
 clap = "2.31"
+zip = "0.3"
+walkdir = "2.1.4"
