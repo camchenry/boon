@@ -7,3 +7,6 @@ authors = ["Cameron McHenry <camchenry@users.noreply.github.com>"]
 clap = "2.31"
 zip = "0.3"
 walkdir = "2.1.4"
+
+[patch.crates-io]
+zip = { git = 'https://github.com/camchenry/zip-rs' }
