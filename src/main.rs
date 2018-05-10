@@ -9,13 +9,14 @@ use std::iter::Iterator;
 use std::io::{Write, Seek};
 use zip::result::ZipError;
 use zip::write::FileOptions;
+use std::process::Command;
 
 use walkdir::{WalkDir, DirEntry};
 use std::path::Path;
 use std::fs::File;
 
 fn main() {
-    let targets = &["love"];
+    let targets = &["love", "windows"];
 
     let app_m = App::new("love-kit")
         .version("1.0")
@@ -47,6 +48,12 @@ fn main() {
                         _ => {}
                     }
                 }
+                Some("windows") => {
+                    println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
+                    match build_windows(directory.unwrap().to_string()) {
+                        _ => {}
+                    }
+                }
                 _ => {}
             }
         },
@@ -73,6 +80,31 @@ fn build_love(directory: String) {
             println!("Error: {:?}", e);
         }
     }
+}
+
+fn build_windows(directory: String) {
+    build_love(directory);
+
+    let love_path = "C:/Program Files/LOVE/love.exe";
+
+    let result: &str = &format!("{}+{}", love_path, "test.love");
+
+    println!("Building for windows..{}", result);
+
+    let output = if cfg!(target_os = "windows") {
+        Command::new("cmd")
+                .args(&["copy", "/b", result, "mygame.exe"])
+                .output()
+                .expect("failed to execute process")
+    } else {
+        // no clue if this will or should work
+        Command::new("cat")
+            .args(&[love_path, "test.love", ">", "mygame.exe"])
+            .output()
+            .expect("failed to execute process")
+    };
+
+    println!("{}", output.status);
 }
 
 fn zip_dir<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod)
