@@ -9,7 +9,7 @@ use std::iter::Iterator;
 use std::io::{Write, Seek};
 use zip::result::ZipError;
 use zip::write::FileOptions;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use walkdir::{WalkDir, DirEntry};
 use std::path::Path;
@@ -23,18 +23,17 @@ fn main() {
         .author("Cameron McHenry")
         .about("LÖVE2D Kit build/deploy tool")
         .subcommand(SubCommand::with_name("build")
-                    .about("Build game for a target platform (win32, macos, ...)")
-                    .arg(Arg::with_name("DIRECTORY")
-                        .required(true)
-                        .takes_value(true)
-                        )
-                    .arg(Arg::with_name("target")
-                         .short("-t")
+                    .about("Build game for a target platform")
+                    .arg(Arg::from_usage("-t, --target 'Specify which target platform to build for'")
                          .required(true)
                          .possible_values(targets)
-                         .max_values(8)
-                         .min_values(1)
-                    ))
+                         .default_value("love")
+                    )
+                    .arg(Arg::with_name("DIRECTORY")
+                         .required(true)
+                         .takes_value(true)
+                        )
+                    )
         .get_matches();
 
     match app_m.subcommand() {
@@ -44,15 +43,11 @@ fn main() {
             match target {
                 Some("love") => {
                     println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
-                    match build_love(directory.unwrap().to_string()) {
-                        _ => {}
-                    }
+                    build_love(directory.unwrap().to_string())
                 }
                 Some("windows") => {
                     println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
-                    match build_windows(directory.unwrap().to_string()) {
-                        _ => {}
-                    }
+                    build_windows(directory.unwrap().to_string())
                 }
                 _ => {}
             }
@@ -70,7 +65,7 @@ fn build_love(directory: String) {
     let method = METHOD_DEFLATED;
 
     let src_dir = &directory;
-    let dst_file: &str = "test.zip";
+    let dst_file: &str = "test.love";
 
     match doit(src_dir, dst_file, method.unwrap()) {
         Ok(_) => {
@@ -85,26 +80,38 @@ fn build_love(directory: String) {
 fn build_windows(directory: String) {
     build_love(directory);
 
-    let love_path = "C:/Program Files/LOVE/love.exe";
+    let love_exe_path = Path::new("./love/love-11.1-win64/love.exe");
+    let output_path = Path::new("./game-win64.exe");
 
-    let result: &str = &format!("{}+{}", love_path, "test.love");
-
-    println!("Building for windows..{}", result);
+    println!("Copying love from {}", love_exe_path.display());
 
     let output = if cfg!(target_os = "windows") {
+        let result: &str = &format!("{}+{}", &love_exe_path.to_str().unwrap(), "test.love");
+        println!("Building for windows.. {}", result);
         Command::new("cmd")
-                .args(&["copy", "/b", result, "mygame.exe"])
+                .args(&["copy", "/b", result, "game-win64.exe"])
                 .output()
                 .expect("failed to execute process")
     } else {
-        // no clue if this will or should work
         Command::new("cat")
-            .args(&[love_path, "test.love", ">", "mygame.exe"])
+            .args(&[love_exe_path.to_str().unwrap(), "test.love"])
             .output()
             .expect("failed to execute process")
     };
 
-    println!("{}", output.status);
+    let mut file = match File::create(&output_path) {
+        Ok(file) => file,
+        Err(why) => {
+            panic!("Unable to create file `{}`: {}", output_path.display(), why);
+        }
+    };
+
+    match file.write_all(&output.stdout) {
+        Ok(_) => {},
+        Err(why) => {
+            panic!("{}", why);
+        }
+    }
 }
 
 fn zip_dir<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod)
