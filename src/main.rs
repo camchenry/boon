@@ -1,162 +1,108 @@
+// @TODO: Add LÖVE 11.1 automatic download via hyper crate
+
 extern crate clap;
-extern crate zip;
+extern crate app_dirs;
 extern crate walkdir;
+extern crate zip;
+extern crate reqwest;
+
+mod download;
+use download::LoveVersion;
+mod build;
 
 use clap::{App, Arg, SubCommand};
 
-use std::io::prelude::*;
-use std::iter::Iterator;
-use std::io::{Write, Seek};
-use zip::result::ZipError;
-use zip::write::FileOptions;
-use std::process::{Command, Stdio};
+use app_dirs::*;
 
-use walkdir::{WalkDir, DirEntry};
-use std::path::Path;
-use std::fs::File;
+const APP_INFO: AppInfo = AppInfo {
+    name: "love-kit",
+    author: "Cameron McHenry"
+};
+
+#[derive(Debug)]
+pub enum Platform {
+    Windows,
+    MacOs,
+}
+
+#[derive(Debug)]
+pub enum Bitness {
+    X86, // 32 bit
+    X64, // 64 bit
+}
 
 fn main() {
-    let targets = &["love", "windows"];
+    let targets = &["love", "windows",];
+
+    let subcmd_build = SubCommand::with_name("build")
+        .about("Build game for a target platform")
+        .arg(Arg::from_usage("-t, --target 'Specify which target platform to build for'")
+             .required(true)
+             .possible_values(targets)
+             .default_value("love")
+            )
+        .arg(Arg::with_name("DIRECTORY")
+             .required(true)
+             .takes_value(true)
+            )
+        .arg(Arg::from_usage("-v, --version 'Specify which target version of LÖVE to build for'")
+             .default_value("11.1")
+            );
+
+    let subcmd_download = SubCommand::with_name("download")
+        .about("Download a version of LÖVE")
+        .arg(Arg::with_name("VERSION")
+             .required(true)
+             .takes_value(true)
+             .possible_values(&["11.1", "0.10.2"])
+            );
 
     let app_m = App::new("love-kit")
         .version("1.0")
         .author("Cameron McHenry")
         .about("LÖVE2D Kit build/deploy tool")
-        .subcommand(SubCommand::with_name("build")
-                    .about("Build game for a target platform")
-                    .arg(Arg::from_usage("-t, --target 'Specify which target platform to build for'")
-                         .required(true)
-                         .possible_values(targets)
-                         .default_value("love")
-                    )
-                    .arg(Arg::with_name("DIRECTORY")
-                         .required(true)
-                         .takes_value(true)
-                        )
-                    )
+        .subcommand(subcmd_build)
+        .subcommand(subcmd_download)
         .get_matches();
 
     match app_m.subcommand() {
-        ("build", Some(sub_m)) => {
-            let directory = sub_m.value_of("DIRECTORY");
-            let target = sub_m.value_of("target");
+        ("build", Some(subcmd)) => {
+            let directory = subcmd.value_of("DIRECTORY");
+            let target = subcmd.value_of("target");
+            let version: LoveVersion = subcmd.value_of("version")
+                .unwrap()
+                .parse::<LoveVersion>()
+                .unwrap();
+
+            println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
+
             match target {
                 Some("love") => {
-                    println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
-                    build_love(directory.unwrap().to_string())
+                    build::build_love(directory.unwrap().to_string())
                 }
                 Some("windows") => {
-                    println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
-                    build_windows(directory.unwrap().to_string())
+                    build::build_windows(directory.unwrap().to_string(), &version, &Bitness::X86);
+                    build::build_windows(directory.unwrap().to_string(), &version, &Bitness::X64);
                 }
                 _ => {}
             }
         },
+        ("download", Some(subcmd)) => {
+            let version: LoveVersion = subcmd.value_of("VERSION")
+                .unwrap()
+                .parse::<LoveVersion>()
+                .unwrap();
 
-        // No command used
+            download::download_love(&version, &Platform::Windows, &Bitness::X86);
+            download::download_love(&version, &Platform::Windows, &Bitness::X64);
+            download::download_love(&version, &Platform::MacOs, &Bitness::X64);
+
+            println!("\nLÖVE v{} is now available for building.", subcmd.value_of("VERSION").unwrap());
+        },
         _ => {
+            println!("No command supplied.");
             println!("{}", app_m.usage());
         },
     }
 }
 
-fn build_love(directory: String) {
-    const METHOD_DEFLATED: Option<zip::CompressionMethod> = Some(zip::CompressionMethod::Deflated);
-    let method = METHOD_DEFLATED;
-
-    let src_dir = &directory;
-    let dst_file: &str = "test.love";
-
-    match doit(src_dir, dst_file, method.unwrap()) {
-        Ok(_) => {
-            println!("done: {} written to {}", src_dir, dst_file);
-        },
-        Err(e) => {
-            println!("Error: {:?}", e);
-        }
-    }
-}
-
-fn build_windows(directory: String) {
-    build_love(directory);
-
-    let love_exe_path = Path::new("./love/love-11.1-win64/love.exe");
-    let output_path = Path::new("./game-win64.exe");
-
-    println!("Copying love from {}", love_exe_path.display());
-
-    let output = if cfg!(target_os = "windows") {
-        let result: &str = &format!("{}+{}", &love_exe_path.to_str().unwrap(), "test.love");
-        println!("Building for windows.. {}", result);
-        Command::new("cmd")
-                .args(&["copy", "/b", result, "game-win64.exe"])
-                .output()
-                .expect("failed to execute process")
-    } else {
-        Command::new("cat")
-            .args(&[love_exe_path.to_str().unwrap(), "test.love"])
-            .output()
-            .expect("failed to execute process")
-    };
-
-    let mut file = match File::create(&output_path) {
-        Ok(file) => file,
-        Err(why) => {
-            panic!("Unable to create file `{}`: {}", output_path.display(), why);
-        }
-    };
-
-    match file.write_all(&output.stdout) {
-        Ok(_) => {},
-        Err(why) => {
-            panic!("{}", why);
-        }
-    }
-}
-
-fn zip_dir<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod)
-              -> zip::result::ZipResult<()>
-    where T: Write+Seek
-{
-    let mut zip = zip::ZipWriter::new(writer);
-    let options = FileOptions::default()
-        .compression_method(method)
-        .unix_permissions(0o644);
-
-    let mut buffer = Vec::new();
-    for entry in it {
-        let path = entry.path();
-        let name = path.strip_prefix(Path::new(prefix))
-            .unwrap()
-            .to_str()
-            .unwrap();
-
-        if path.is_file() {
-            println!("adding {:?} as {:?} ...", path, name);
-            zip.start_file(name, options)?;
-            let mut f = File::open(path)?;
-
-            f.read_to_end(&mut buffer)?;
-            zip.write_all(&*buffer)?;
-            buffer.clear();
-        }
-    }
-    zip.finish()?;
-    Result::Ok(())
-}
-
-fn doit(src_dir: &str, dst_file: &str, method: zip::CompressionMethod) -> zip::result::ZipResult<()> {
-    if !Path::new(src_dir).is_dir() {
-        return Err(ZipError::FileNotFound);
-    }
-
-    let path = Path::new(dst_file);
-    let file = File::create(&path).unwrap();
-
-    let walkdir = WalkDir::new(src_dir.to_string());
-    let it = walkdir.into_iter();
-
-    zip_dir(&mut it.filter_map(|e| e.ok()), src_dir, file, method)?;
-
-    Ok(())
-}
