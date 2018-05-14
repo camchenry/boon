@@ -10,7 +10,7 @@ use std::io::prelude::*;
 use std::iter::Iterator;
 use std::io::{Write, Seek};
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs::File;
 
 use zip::result::ZipError;
@@ -64,8 +64,16 @@ pub fn build_windows(directory: String, version: &LoveVersion, bitness: &Bitness
     build_love(directory);
 
     let filename = get_love_filename(version, &Platform::Windows, bitness);
-    let path = &format!("/home/camchenry/.local/share/love-kit/{}/love.exe", filename);
-    let love_exe_path = Path::new(path);
+
+    let app_dir_path = get_app_dir(AppDataType::UserData, &APP_INFO, "").unwrap();
+
+    let mut love_exe_path = PathBuf::new();
+    love_exe_path.push(&format!("{}/{}/love.exe", &app_dir_path.display(), &filename));
+    if !love_exe_path.exists() {
+        println!("\nlove.exe not found at '{:?}'\nYou may need to download LÖVE first: `love-kit download <version>`\n", love_exe_path);
+        panic!();
+    }
+
     let output_file_name = get_output_filename(String::from("game"), &Platform::Windows, bitness);
     let output_path = Path::new(output_file_name.as_str());
 
