@@ -63,6 +63,8 @@ fn main() {
 
             println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
 
+            build::scan_files(directory.unwrap().to_string());
+
             match target {
                 Some("love") => {
                     build::build_love(directory.unwrap().to_string())
@@ -92,4 +94,3 @@ fn main() {
         },
     }
 }
-

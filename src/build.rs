@@ -44,6 +44,26 @@ pub fn get_output_filename<'a>(name: String, platform: &Platform, bitness: &Bitn
     }
 }
 
+// TODO: check CONFIG to see if DEBUG set to true should halt building process
+pub fn scan_files(directory: String) {
+    let globals_file = format!("{}{}", directory, "/globals.lua");
+    println!("Looking for globals.lua at: {}", globals_file);
+
+    let mut f = File::open(globals_file).expect("file not found");
+
+    let mut contents = String::new();
+    f.read_to_string(&mut contents)
+        .expect("something went wrong reading the file");
+
+    if (contents.find("RELEASE = false") != None && contents.find("DEBUG = not RELEASE") != None) || contents.find("DEBUG = true") != None {
+        println!("!!!WARNING!!! Debug is ENABLED!")
+    } else if (contents.find("RELEASE = true") != None && contents.find("DEBUG = not RELEASE") != None) || contents.find("DEBUG = false") != None {
+        println!("You can rest easy. Debug is DISABLED.")
+    } else {
+        println!("It is uncertain what DEBUG is set to. Make sure to verify it on your own.")
+    }
+}
+
 pub fn build_love(directory: String) {
     let method = METHOD_DEFLATED;
 
