@@ -1,11 +1,11 @@
 extern crate std;
 extern crate zip;
+use types::*;
 
 use APP_INFO;
 use app_dirs::*;
 
 use ::{Platform, Bitness};
-use download::LoveVersion;
 
 use std::io::prelude::*;
 use std::iter::Iterator;
@@ -16,7 +16,6 @@ use std::fs::File;
 
 use zip::result::ZipError;
 use zip::write::FileOptions;
-use std::process::Command;
 use walkdir::{WalkDir, DirEntry};
 
 const METHOD_DEFLATED: Option<zip::CompressionMethod> = Some(zip::CompressionMethod::Deflated);

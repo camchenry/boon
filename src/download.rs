@@ -1,6 +1,6 @@
 extern crate zip;
 extern crate std;
-use std::str::FromStr;
+use types::*;
 
 use app_dirs::*;
 use APP_INFO;
@@ -9,40 +9,7 @@ use reqwest;
 use ::{Platform, Bitness};
 
 use std::io::Write;
-// use std::path::Path;
 use std::fs::File;
-
-use zip::result::ZipError;
-use zip::write::FileOptions;
-use std::process::Command;
-use walkdir::{WalkDir, DirEntry};
-
-#[derive(Debug)]
-pub enum LoveVersion {
-    V11_1,
-    V0_10_2,
-}
-
-
-struct LoveVersionFileInfo<'a>{
-    version: &'a LoveVersion,
-    platform: &'a ::Platform,
-    bitness: &'a ::Bitness,
-    filename: &'a str,
-    url: &'a str,
-}
-
-impl FromStr for LoveVersion {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err>{
-        match s {
-            "11.1" => Ok(LoveVersion::V11_1),
-            "11.1.0" => Ok(LoveVersion::V11_1),
-            "0.10.2" => Ok(LoveVersion::V0_10_2),
-            _ => Err(()),
-        }
-    }
-}
 
 pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitness) {
     let file_info = match (version, platform, bitness) {

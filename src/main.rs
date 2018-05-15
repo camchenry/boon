@@ -1,35 +1,21 @@
-// @TODO: Add LÖVE 11.1 automatic download via hyper crate
-
 extern crate clap;
 extern crate app_dirs;
 extern crate walkdir;
 extern crate zip;
 extern crate reqwest;
 
+mod types;
+use types::*;
 mod download;
-use download::LoveVersion;
 mod build;
 
 use clap::{App, Arg, SubCommand};
-
 use app_dirs::*;
 
 const APP_INFO: AppInfo = AppInfo {
     name: "love-kit",
-    author: "Cameron McHenry"
+    author: "love-kit"
 };
-
-#[derive(Debug)]
-pub enum Platform {
-    Windows,
-    MacOs,
-}
-
-#[derive(Debug)]
-pub enum Bitness {
-    X86, // 32 bit
-    X64, // 64 bit
-}
 
 fn main() {
     let targets = &["love", "windows",];
@@ -47,6 +33,7 @@ fn main() {
             )
         .arg(Arg::from_usage("-v, --version 'Specify which target version of LÖVE to build for'")
              .default_value("11.1")
+             .possible_values(&["11.1", "0.10.2"])
             );
 
     let subcmd_download = SubCommand::with_name("download")
