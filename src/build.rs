@@ -70,7 +70,7 @@ pub fn build_love(directory: String) {
     let src_dir = &directory;
     let dst_file: &str = "test.love";
 
-    match zip_directory(src_dir, dst_file, method.unwrap()) {
+    match collect_zip_directory(src_dir, dst_file, method.unwrap()) {
         Ok(_) => {
             println!("done: {} written to {}", src_dir, dst_file);
         },
@@ -134,7 +134,19 @@ pub fn build_windows(directory: String, version: &LoveVersion, bitness: &Bitness
     }
 }
 
-fn zip_dir<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod)
+fn should_exclude_file(file_name: String) -> bool {
+    let exclude_names = vec![".git", "releases", "play.bat", ".gitattributes", "screenshots"];
+
+    for exclude_name in exclude_names {
+        if file_name.find(exclude_name) != None {
+            return true;
+        }
+    }
+
+    return false
+}
+
+fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod)
               -> zip::result::ZipResult<()>
     where T: Write+Seek
 {
@@ -151,7 +163,7 @@ fn zip_dir<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method:
             .to_str()
             .unwrap();
 
-        if path.is_file() {
+        if path.is_file() && !should_exclude_file(name.to_string()) {
             println!("adding {:?} as {:?} ...", path, name);
             zip.start_file(name, options)?;
             let mut f = File::open(path)?;
@@ -165,7 +177,7 @@ fn zip_dir<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method:
     Result::Ok(())
 }
 
-fn zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod) -> zip::result::ZipResult<()> {
+fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod) -> zip::result::ZipResult<()> {
     if !Path::new(src_dir).is_dir() {
         return Err(ZipError::FileNotFound);
     }
@@ -176,7 +188,7 @@ fn zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod) 
     let walkdir = WalkDir::new(src_dir.to_string());
     let it = walkdir.into_iter();
 
-    zip_dir(&mut it.filter_map(|e| e.ok()), src_dir, file, method)?;
+    zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method)?;
 
     Ok(())
 }
