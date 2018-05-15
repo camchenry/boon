@@ -1,3 +1,4 @@
+extern crate std;
 extern crate zip;
 
 use APP_INFO;
@@ -79,31 +80,37 @@ pub fn build_windows(directory: String, version: &LoveVersion, bitness: &Bitness
 
     println!("Copying love from {}", love_exe_path.display());
 
-    let output = if cfg!(target_os = "windows") {
-        let result: &str = &format!("{}+{}", &love_exe_path.to_str().unwrap(), "test.love");
-        println!("Building for windows.. {}", result);
-        Command::new("cmd")
-                .args(&["copy", "/b", result, "game-win64.exe"])
-                .output()
-                .expect("failed to execute process")
-    } else {
-        Command::new("cat")
-            .args(&[love_exe_path.to_str().unwrap(), "test.love"])
-            .output()
-            .expect("failed to execute process")
-    };
-
-    let mut file = match File::create(&output_path) {
+    let mut output_file = match File::create(&output_path) {
         Ok(file) => file,
         Err(why) => {
             panic!("Unable to create file `{}`: {}", output_path.display(), why);
         }
     };
 
-    match file.write_all(&output.stdout) {
-        Ok(_) => {},
-        Err(why) => {
-            panic!("{}", why);
+    let paths = &[
+        love_exe_path.as_path(),
+        Path::new("./test.love"),
+    ];
+
+    let mut buffer = Vec::new();
+    for path in paths {
+        if path.is_file() {
+            let mut file = match File::open(path) {
+                Ok(file) => file,
+                Err(why) => panic!("Could not open file: {}", why),
+            };
+
+            match file.read_to_end(&mut buffer) {
+                Ok(_) => {},
+                Err(why) => panic!("Could not read file: {}", why),
+            };
+
+            match output_file.write_all(&*buffer) {
+                Ok(_) => {},
+                Err(why) => panic!("Could not write output file: {}", why),
+            };
+
+            buffer.clear();
         }
     }
 }
