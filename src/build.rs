@@ -90,7 +90,7 @@ pub fn build_windows(directory: String, version: &LoveVersion, bitness: &Bitness
     let mut love_exe_path = PathBuf::new();
     love_exe_path.push(&format!("{}/{}/love.exe", &app_dir_path.display(), &filename));
     if !love_exe_path.exists() {
-        println!("\nlove.exe not found at '{:?}'\nYou may need to download LÖVE first: `love-kit download <version>`\n", love_exe_path);
+        println!("\nlove.exe not found at '{:?}'\nYou may need to download LÖVE first: `love-kit download <version>`\n\tRecommended version: 11.1", love_exe_path);
         panic!();
     }
 
@@ -135,7 +135,7 @@ pub fn build_windows(directory: String, version: &LoveVersion, bitness: &Bitness
 }
 
 fn should_exclude_file(file_name: String) -> bool {
-    let exclude_names = vec![".git", "releases", "play.bat", ".gitattributes", "screenshots"];
+    let exclude_names = vec![".git", "releases", "play.bat", ".gitattributes", "screenshots", ".love", ".exe"];
 
     for exclude_name in exclude_names {
         if file_name.find(exclude_name) != None {
