@@ -1,2 +1,13 @@
-debug_halt = true # If true, build will not be allowed when DEBUG is true
-ignore_list = [".git", "releases", "play.bat", ".gitattributes", "screenshots", ".love", ".exe"] # Which folders and files to exclude when building. (Anything partially containing these too).
+# If true, build will not be allowed when DEBUG is true
+debug_halt = true
+
+# Which folders and files to exclude when building. (Anything partially containing these too).
+ignore_list = [
+    ".git",
+    "releases",
+    "play.bat",
+    ".gitattributes",
+    "screenshots",
+    ".love",
+    ".exe"
+]
