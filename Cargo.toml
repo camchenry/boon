@@ -9,6 +9,7 @@ zip = "0.3"
 walkdir = "2.1.4"
 app_dirs = "1.2.1"
 reqwest = "0.8.5"
+config = "0.8"
 
 [patch.crates-io]
 zip = { git = 'https://github.com/camchenry/zip-rs' }

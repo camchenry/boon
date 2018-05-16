@@ -3,9 +3,11 @@ extern crate app_dirs;
 extern crate walkdir;
 extern crate zip;
 extern crate reqwest;
+extern crate config;
 
 mod types;
 use types::*;
+
 mod download;
 mod build;
 
@@ -18,7 +20,13 @@ const APP_INFO: AppInfo = AppInfo {
 };
 
 fn main() {
-    let targets = &["love", "windows",];
+    let targets = &["love", "windows"];
+
+    // load in config from Settings file
+    let mut settings = config::Config::default();
+    settings
+        // Add in `./Settings.toml`
+        .merge(config::File::with_name("Settings")).unwrap();
 
     let subcmd_build = SubCommand::with_name("build")
         .about("Build game for a target platform")
@@ -63,13 +71,14 @@ fn main() {
 
             println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
 
-            build::scan_files(directory.unwrap().to_string());
+            build::scan_files(directory.unwrap().to_string(), &settings);
 
             match target {
                 Some("love") => {
-                    build::build_love(directory.unwrap().to_string())
+                    build::build_love(directory.unwrap().to_string(), &settings)
                 }
                 Some("windows") => {
+                    build::build_love(directory.unwrap().to_string(),& settings);
                     build::build_windows(directory.unwrap().to_string(), &version, &Bitness::X86);
                     build::build_windows(directory.unwrap().to_string(), &version, &Bitness::X64);
                 }

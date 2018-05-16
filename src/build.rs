@@ -1,5 +1,7 @@
 extern crate std;
 extern crate zip;
+extern crate config;
+
 use types::*;
 
 use APP_INFO;
@@ -18,7 +20,12 @@ use zip::result::ZipError;
 use zip::write::FileOptions;
 use walkdir::{WalkDir, DirEntry};
 
+use self::config::ConfigError;
+use self::config::Config;
+
 const METHOD_DEFLATED: Option<zip::CompressionMethod> = Some(zip::CompressionMethod::Deflated);
+
+static mut IS_LOVE_BUILT: bool = false;
 
 // @TODO: Return an Option instead
 pub fn get_love_filename<'a>(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> &'a str {
@@ -45,7 +52,7 @@ pub fn get_output_filename<'a>(name: String, platform: &Platform, bitness: &Bitn
 }
 
 // TODO: check CONFIG to see if DEBUG set to true should halt building process
-pub fn scan_files(directory: String) {
+pub fn scan_files(directory: String, settings: &Config) {
     let globals_file = format!("{}{}", directory, "/globals.lua");
     println!("Looking for globals.lua at: {}", globals_file);
 
@@ -56,7 +63,10 @@ pub fn scan_files(directory: String) {
         .expect("something went wrong reading the file");
 
     if (contents.find("RELEASE = false") != None && contents.find("DEBUG = not RELEASE") != None) || contents.find("DEBUG = true") != None {
-        println!("!!!WARNING!!! Debug is ENABLED!")
+        println!("!!!WARNING!!! Debug is ENABLED!");
+        if settings.get_bool("debug_halt").unwrap() {
+            panic!("DEBUG set to false. If you want to build anyway, modify debug_halt in Settings.");
+        }
     } else if (contents.find("RELEASE = true") != None && contents.find("DEBUG = not RELEASE") != None) || contents.find("DEBUG = false") != None {
         println!("You can rest easy. Debug is DISABLED.")
     } else {
@@ -64,13 +74,13 @@ pub fn scan_files(directory: String) {
     }
 }
 
-pub fn build_love(directory: String) {
+pub fn build_love(directory: String, settings: &Config) {
     let method = METHOD_DEFLATED;
 
     let src_dir = &directory;
     let dst_file: &str = "test.love";
 
-    match collect_zip_directory(src_dir, dst_file, method.unwrap()) {
+    match collect_zip_directory(src_dir, dst_file, method.unwrap(), settings) {
         Ok(_) => {
             println!("done: {} written to {}", src_dir, dst_file);
         },
@@ -78,10 +88,18 @@ pub fn build_love(directory: String) {
             println!("Error: {:?}", e);
         }
     }
+
+    unsafe {
+        IS_LOVE_BUILT = true;
+    }
 }
 
 pub fn build_windows(directory: String, version: &LoveVersion, bitness: &Bitness) {
-    build_love(directory);
+    unsafe {
+        if !IS_LOVE_BUILT {
+            println!("Error: Cannot build for windows because .love not built.");
+        }
+    }
 
     let filename = get_love_filename(version, &Platform::Windows, bitness);
 
@@ -134,11 +152,11 @@ pub fn build_windows(directory: String, version: &LoveVersion, bitness: &Bitness
     }
 }
 
-fn should_exclude_file(file_name: String) -> bool {
-    let exclude_names = vec![".git", "releases", "play.bat", ".gitattributes", "screenshots", ".love", ".exe"];
-
-    for exclude_name in exclude_names {
-        if file_name.find(exclude_name) != None {
+fn should_exclude_file(file_name: String, settings: &Config) -> bool {
+    let ignores_list: Vec<String> = settings.get("ignore_list").unwrap();
+    
+    for exclude_name in ignores_list {
+        if file_name.find(&exclude_name) != None {
             return true;
         }
     }
@@ -146,7 +164,7 @@ fn should_exclude_file(file_name: String) -> bool {
     return false
 }
 
-fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod)
+fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod, settings: &Config)
               -> zip::result::ZipResult<()>
     where T: Write+Seek
 {
@@ -163,8 +181,9 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
             .to_str()
             .unwrap();
 
-        if path.is_file() && !should_exclude_file(name.to_string()) {
-            println!("adding {:?} as {:?} ...", path, name);
+        if path.is_file() && !should_exclude_file(name.to_string(), settings) {
+            println!("adding {:?} ...", name);
+            //println!("adding as {:?} ...", path, name);
             zip.start_file(name, options)?;
             let mut f = File::open(path)?;
 
@@ -177,7 +196,7 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
     Result::Ok(())
 }
 
-fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod) -> zip::result::ZipResult<()> {
+fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod, settings: &Config) -> zip::result::ZipResult<()> {
     if !Path::new(src_dir).is_dir() {
         return Err(ZipError::FileNotFound);
     }
@@ -188,7 +207,7 @@ fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::Compression
     let walkdir = WalkDir::new(src_dir.to_string());
     let it = walkdir.into_iter();
 
-    zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method)?;
+    zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method, settings)?;
 
     Ok(())
 }
