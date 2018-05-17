@@ -28,6 +28,22 @@ fn main() {
         // Add in `./Settings.toml`
         .merge(config::File::with_name("Settings")).unwrap();
 
+    let build_settings = BuildSettings {
+        debug_halt: settings.get("build.debug_halt").unwrap(),
+        ignore_list: settings.get("build.ignore_list").unwrap()
+    };
+
+    let project_settings = ProjectSettings {
+        authors: &settings.get_str("project.authors").unwrap(),
+        description: &settings.get_str("project.description").unwrap(),
+        email: &settings.get_str("project.email").unwrap(),
+        package_name: &settings.get_str("project.package_name").unwrap(),
+        project_title: &settings.get_str("project.project_title").unwrap(),
+        project_url: &settings.get_str("project.project_url").unwrap(),
+        project_uti: &settings.get_str("project.project_uti").unwrap(),
+        project_version: &settings.get_str("project.project_version").unwrap(),
+    };
+
     let subcmd_build = SubCommand::with_name("build")
         .about("Build game for a target platform")
         .arg(Arg::from_usage("-t, --target 'Specify which target platform to build for'")
@@ -71,14 +87,14 @@ fn main() {
 
             println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
 
-            build::scan_files(directory.unwrap().to_string(), &settings);
+            build::scan_files(directory.unwrap().to_string(), &build_settings);
 
             match target {
                 Some("love") => {
-                    build::build_love(directory.unwrap().to_string(), &settings)
+                    build::build_love(directory.unwrap().to_string(), &build_settings)
                 }
                 Some("windows") => {
-                    build::build_love(directory.unwrap().to_string(),& settings);
+                    build::build_love(directory.unwrap().to_string(), &build_settings);
                     build::build_windows(directory.unwrap().to_string(), &version, &Bitness::X86);
                     build::build_windows(directory.unwrap().to_string(), &version, &Bitness::X64);
                 }

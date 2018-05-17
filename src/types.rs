@@ -24,7 +24,7 @@ pub enum LoveVersion {
 }
 
 /// File info about remote download
-pub struct LoveVersionFileInfo<'a>{
+pub struct LoveVersionFileInfo<'a> {
     pub version: &'a LoveVersion,
     pub platform: &'a ::Platform,
     pub bitness: &'a ::Bitness,
@@ -42,4 +42,20 @@ impl FromStr for LoveVersion {
             _ => Err(()),
         }
     }
+}
+
+pub struct BuildSettings<> {
+    pub debug_halt: bool,
+    pub ignore_list: Vec<String>,
+}
+
+pub struct ProjectSettings<'a> {
+    pub authors: &'a str,
+    pub description: &'a str,
+    pub email: &'a str,
+    pub package_name: &'a str,
+    pub project_title: &'a str,
+    pub project_url: &'a str,
+    pub project_uti: &'a str,
+    pub project_version: &'a str,
 }
