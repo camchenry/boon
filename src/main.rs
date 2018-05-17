@@ -4,6 +4,7 @@ extern crate walkdir;
 extern crate zip;
 extern crate reqwest;
 extern crate config;
+extern crate regex;
 
 mod types;
 use types::*;
@@ -20,7 +21,7 @@ const APP_INFO: AppInfo = AppInfo {
 };
 
 fn main() {
-    let targets = &["love", "windows"];
+    let targets = &["love", "windows", "macos"];
 
     // load in config from Settings file
     let mut settings = config::Config::default();
@@ -71,16 +72,29 @@ fn main() {
 
             println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
 
+            // @TODO: Get values from local project config
+            let project = Project {
+                title: String::from("LÖVE Game"),
+                app_name: String::from("game"),
+                directory: directory.unwrap().to_string(),
+                uti: String::from("com.company.game"),
+                settings: &settings,
+            };
+
             build::scan_files(directory.unwrap().to_string(), &settings);
 
             match target {
                 Some("love") => {
-                    build::build_love(directory.unwrap().to_string(), &settings)
+                    build::build_love(&project)
                 }
                 Some("windows") => {
-                    build::build_love(directory.unwrap().to_string(),& settings);
-                    build::build_windows(directory.unwrap().to_string(), &version, &Bitness::X86);
-                    build::build_windows(directory.unwrap().to_string(), &version, &Bitness::X64);
+                    build::build_love(&project);
+                    build::build_windows(&project, &version, &Bitness::X86);
+                    build::build_windows(&project, &version, &Bitness::X64);
+                }
+                Some("macos") => {
+                    build::build_love(&project);
+                    build::build_macos(&project, &version, &Bitness::X64);
                 }
                 _ => {}
             }
@@ -95,7 +109,7 @@ fn main() {
             download::download_love(&version, &Platform::Windows, &Bitness::X64);
             download::download_love(&version, &Platform::MacOs, &Bitness::X64);
 
-            println!("\nLÖVE v{} is now available for building.", subcmd.value_of("VERSION").unwrap());
+            println!("\nLÖVE {} is now available for building.", version.to_string())
         },
         _ => {
             println!("No command supplied.");

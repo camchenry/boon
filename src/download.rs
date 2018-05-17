@@ -48,7 +48,7 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         }
     };
 
-    let mut output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "").unwrap();
+    let mut output_file_path = app_dir(AppDataType::UserData, &APP_INFO, version.to_string().as_str()).unwrap();
     output_file_path.push(file_info.filename);
 
     let zip_exists: bool = output_file_path.exists();

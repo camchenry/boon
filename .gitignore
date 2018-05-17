@@ -2,3 +2,6 @@
 **/*.rs.bk
 love/*
 *.exe
+*.love
+*.app
+*.zip
