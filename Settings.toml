@@ -1,3 +1,4 @@
+[build]
 # If true, build will not be allowed when DEBUG is true
 debug_halt = true
 
@@ -11,3 +12,13 @@ ignore_list = [
     ".love",
     ".exe"
 ]
+
+[project]
+authors = "Developer Name"
+description = "Your description here."
+email = "email@example.com"
+package_name = "my_game"
+title = "My Game"
+url = "http://www.example.com/"
+uti = "com.company.mygame"
+version = "v1.0"

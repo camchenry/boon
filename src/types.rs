@@ -1,14 +1,23 @@
 extern crate std;
-extern crate config;
 
 use std::str::FromStr;
 
-pub struct Project<'a> {
-    pub title: String,      // Ex: "My Super Awesome Game"
-    pub app_name: String,   // Ex: "super_game"
+pub struct BuildSettings<> {
+    pub debug_halt: bool,
+    pub ignore_list: Vec<String>,
+}
+
+pub struct Project {
+    pub title: String,          // Ex: "My Super Awesome Game"
+    pub package_name: String,   // Ex: "super_game"
     pub directory: String,
-    pub uti: String,        // Uniform Type Identifier, e.g. "org.love2d.love"
-    pub settings: &'a config::Config,
+    pub uti: String,            // Uniform Type Identifier, e.g. "org.love2d.love"
+
+    pub authors: String,
+    pub description: String,
+    pub email: String,
+    pub url: String,
+    pub version: String,
 }
 
 /// Represents an operating system or other platform/environment.
@@ -33,7 +42,7 @@ pub enum LoveVersion {
 }
 
 /// File info about remote download
-pub struct LoveVersionFileInfo<'a>{
+pub struct LoveVersionFileInfo<'a> {
     pub version: &'a LoveVersion,
     pub platform: &'a ::Platform,
     pub bitness: &'a ::Bitness,

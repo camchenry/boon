@@ -22,8 +22,6 @@ use zip::result::ZipError;
 use zip::write::FileOptions;
 use walkdir::{WalkDir, DirEntry};
 
-use self::config::Config;
-
 const METHOD_DEFLATED: Option<zip::CompressionMethod> = Some(zip::CompressionMethod::Deflated);
 
 static mut IS_LOVE_BUILT: bool = false;
@@ -46,8 +44,8 @@ pub fn get_love_file_name<'a>(project: &Project) -> String {
 
 pub fn get_output_filename<'a>(project: &Project, platform: &Platform, bitness: &Bitness) -> String {
     match (platform, bitness) {
-        (&Platform::Windows, &Bitness::X64) => format!("{}-win64.exe", project.app_name),
-        (&Platform::Windows, &Bitness::X86) => format!("{}-win32.exe", project.app_name),
+        (&Platform::Windows, &Bitness::X64) => format!("{}-win64.exe", project.package_name),
+        (&Platform::Windows, &Bitness::X86) => format!("{}-win32.exe", project.package_name),
         (&Platform::MacOs,   _) =>             format!("{}.app", project.title),
     }
 }
@@ -60,8 +58,8 @@ pub fn get_love_version_path(version: &LoveVersion, platform: &Platform, bitness
 }
 
 // TODO: check CONFIG to see if DEBUG set to true should halt building process
-pub fn scan_files(directory: String, settings: &Config) {
-    let globals_file = format!("{}{}", directory, "/globals.lua");
+pub fn scan_files(project: &Project, build_settings: &BuildSettings) {
+    let globals_file = format!("{}{}", project.directory, "/globals.lua");
     println!("Looking for globals.lua at: {}", globals_file);
 
     let mut f = File::open(globals_file).expect("file not found");
@@ -72,7 +70,7 @@ pub fn scan_files(directory: String, settings: &Config) {
 
     if (contents.find("RELEASE = false") != None && contents.find("DEBUG = not RELEASE") != None) || contents.find("DEBUG = true") != None {
         println!("!!!WARNING!!! Debug is ENABLED!");
-        if settings.get_bool("debug_halt").unwrap() {
+        if build_settings.debug_halt {
             panic!("DEBUG set to false. If you want to build anyway, modify debug_halt in Settings.");
         }
     } else if (contents.find("RELEASE = true") != None && contents.find("DEBUG = not RELEASE") != None) || contents.find("DEBUG = false") != None {
@@ -82,13 +80,13 @@ pub fn scan_files(directory: String, settings: &Config) {
     }
 }
 
-pub fn build_love(project: &Project) {
+pub fn build_love(project: &Project, build_settings: &BuildSettings) {
     let method = METHOD_DEFLATED;
 
     let src_dir = &project.directory;
     let dst_file = get_love_file_name(&project);
 
-    match collect_zip_directory(src_dir, dst_file.as_str(), method.unwrap(), project.settings) {
+    match collect_zip_directory(src_dir, dst_file.as_str(), method.unwrap(), build_settings) {
         Ok(_) => {
             println!("done: {} written to {}", src_dir, dst_file);
         },
@@ -266,10 +264,10 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
     };
 }
 
-fn should_exclude_file(file_name: String, settings: &Config) -> bool {
-    let ignores_list: Vec<String> = settings.get("ignore_list").unwrap();
+fn should_exclude_file(file_name: String, build_settings: &BuildSettings) -> bool {
+    let ignore_list = build_settings.ignore_list.clone();
 
-    for exclude_name in ignores_list {
+    for exclude_name in ignore_list {
         if file_name.find(&exclude_name) != None {
             return true;
         }
@@ -278,7 +276,7 @@ fn should_exclude_file(file_name: String, settings: &Config) -> bool {
     return false
 }
 
-fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod, settings: &Config)
+fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod, build_settings: &BuildSettings)
               -> zip::result::ZipResult<()>
     where T: Write+Seek
 {
@@ -295,7 +293,7 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
             .to_str()
             .unwrap();
 
-        if path.is_file() && !should_exclude_file(name.to_string(), settings) {
+        if path.is_file() && !should_exclude_file(name.to_string(), build_settings) {
             println!("adding {:?} ...", name);
             //println!("adding as {:?} ...", path, name);
             zip.start_file(name, options)?;
@@ -310,7 +308,7 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
     Result::Ok(())
 }
 
-fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod, settings: &Config) -> zip::result::ZipResult<()> {
+fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod, build_settings: &BuildSettings) -> zip::result::ZipResult<()> {
     if !Path::new(src_dir).is_dir() {
         return Err(ZipError::FileNotFound);
     }
@@ -321,7 +319,7 @@ fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::Compression
     let walkdir = WalkDir::new(src_dir.to_string());
     let it = walkdir.into_iter();
 
-    zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method, settings)?;
+    zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method, build_settings)?;
 
     Ok(())
 }

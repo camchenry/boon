@@ -23,11 +23,17 @@ const APP_INFO: AppInfo = AppInfo {
 fn main() {
     let targets = &["love", "windows", "macos"];
 
+    // @TODO: Get values from local project config
     // load in config from Settings file
     let mut settings = config::Config::default();
     settings
         // Add in `./Settings.toml`
         .merge(config::File::with_name("Settings")).unwrap();
+
+    let build_settings = BuildSettings {
+        debug_halt: settings.get("build.debug_halt").unwrap(),
+        ignore_list: settings.get("build.ignore_list").unwrap()
+    };
 
     let subcmd_build = SubCommand::with_name("build")
         .about("Build game for a target platform")
@@ -72,28 +78,32 @@ fn main() {
 
             println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
 
-            // @TODO: Get values from local project config
             let project = Project {
-                title: String::from("LÖVE Game"),
-                app_name: String::from("game"),
+                title: settings.get_str("project.title").unwrap_or("My Game".to_owned()),
+                package_name: settings.get_str("project.package_name").unwrap_or("my_game".to_owned()),
                 directory: directory.unwrap().to_string(),
-                uti: String::from("com.company.game"),
-                settings: &settings,
+                uti: settings.get_str("project.uti").unwrap_or("com.company.mygame".to_owned()),
+
+                authors: settings.get_str("project.authors").unwrap_or("Developer Name".to_owned()),
+                description: settings.get_str("project.description").unwrap_or("Your description here.".to_owned()),
+                email: settings.get_str("project.email").unwrap_or("email@example.com".to_owned()),
+                url: settings.get_str("project.url").unwrap_or("http://www.example.com/".to_owned()),
+                version: settings.get_str("version").unwrap_or("v1.0".to_owned()),
             };
 
-            build::scan_files(directory.unwrap().to_string(), &settings);
+            build::scan_files(&project, &build_settings);
 
             match target {
                 Some("love") => {
-                    build::build_love(&project)
+                    build::build_love(&project, &build_settings)
                 }
                 Some("windows") => {
-                    build::build_love(&project);
+                    build::build_love(&project, &build_settings);
                     build::build_windows(&project, &version, &Bitness::X86);
                     build::build_windows(&project, &version, &Bitness::X64);
                 }
                 Some("macos") => {
-                    build::build_love(&project);
+                    build::build_love(&project, &build_settings);
                     build::build_macos(&project, &version, &Bitness::X64);
                 }
                 _ => {}
