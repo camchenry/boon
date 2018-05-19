@@ -91,7 +91,7 @@ fn main() {
                 version: settings.get_str("version").unwrap_or("v1.0".to_owned()),
             };
 
-            build::scan_files(&project, &build_settings);
+            build::build_init(&project, &build_settings);
 
             match target {
                 Some("love") => {

@@ -5,7 +5,7 @@ debug_halt = true
 # Which folders and files to exclude when building. (Anything partially containing these too).
 ignore_list = [
     ".git",
-    "releases",
+    "release",
     "play.bat",
     ".gitattributes",
     "screenshots",

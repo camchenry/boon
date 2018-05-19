@@ -22,12 +22,10 @@ use zip::result::ZipError;
 use zip::write::FileOptions;
 use walkdir::{WalkDir, DirEntry};
 
-const METHOD_DEFLATED: Option<zip::CompressionMethod> = Some(zip::CompressionMethod::Deflated);
-
 static mut IS_LOVE_BUILT: bool = false;
 
-// @TODO: Return an Option instead
-pub fn get_love_version_file_name<'a>(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> &'a str {
+/// Get the folder name of where a version of LÖVE is stored in the app cache
+pub fn get_love_version_file_name(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> String {
     match (version, platform, bitness) {
         (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X64) => "love-11.1.0-win64",
         (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X86) => "love-11.1.0-win32",
@@ -35,21 +33,33 @@ pub fn get_love_version_file_name<'a>(version: &LoveVersion, platform: &Platform
         (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X64) => "love-0.10.2-win64",
         (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X86) => "love-0.10.2-win32",
         (&LoveVersion::V0_10_2, &Platform::MacOs,   _)             => "love.app",
-    }
+    }.to_owned()
 }
 
-pub fn get_love_file_name<'a>(project: &Project) -> String {
+/// Get file name of the .love file (same for all platforms)
+pub fn get_love_file_name(project: &Project) -> String {
     format!("{}.love", project.title.to_owned())
 }
 
-pub fn get_output_filename<'a>(project: &Project, platform: &Platform, bitness: &Bitness) -> String {
+/// Get file name for individual binary based on platform and bitness
+pub fn get_output_filename(project: &Project, platform: &Platform, bitness: &Bitness) -> String {
     match (platform, bitness) {
-        (&Platform::Windows, &Bitness::X64) => format!("{}-win64.exe", project.package_name),
-        (&Platform::Windows, &Bitness::X86) => format!("{}-win32.exe", project.package_name),
+        (&Platform::Windows, &Bitness::X64) => format!("{}.exe", project.package_name),
+        (&Platform::Windows, &Bitness::X86) => format!("{}.exe", project.package_name),
         (&Platform::MacOs,   _) =>             format!("{}.app", project.title),
     }
 }
 
+/// Get file name of the distributed .zip file based on platform and bitness
+pub fn get_zip_output_filename(project: &Project, platform: &Platform, bitness: &Bitness) -> String {
+    match (platform, bitness) {
+        (&Platform::Windows, &Bitness::X64) => format!("{}-win64", project.title),
+        (&Platform::Windows, &Bitness::X86) => format!("{}-win32", project.title),
+        (&Platform::MacOs,   _) =>             format!("{}-macos", project.title),
+    }
+}
+
+/// Get a platform-specific path to the app cache directory where LÖVE is stored.
 pub fn get_love_version_path(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> PathBuf {
     let filename = get_love_version_file_name(version, platform, bitness);
     let subdirectory = &format!("{}/{}", version.to_string(), filename);
@@ -80,13 +90,33 @@ pub fn scan_files(project: &Project, build_settings: &BuildSettings) {
     }
 }
 
+pub fn build_init(project: &Project, build_settings: &BuildSettings) {
+    scan_files(&project, &build_settings);
+
+    // Ensure release directory exists.
+    let release_dir_path = project.get_release_path();
+
+    if !release_dir_path.exists() {
+        println!("Creating release directory {}", release_dir_path.display());
+
+        match std::fs::create_dir(&release_dir_path) {
+            Ok(_) => {},
+            Err(err) => panic!("Could not create release directory: '{}'", err)
+        };
+    }
+}
+
+//
+// LÖVE .love build
+//
 pub fn build_love(project: &Project, build_settings: &BuildSettings) {
-    let method = METHOD_DEFLATED;
+    let method = zip::CompressionMethod::Deflated;
 
     let src_dir = &project.directory;
-    let dst_file = get_love_file_name(&project);
+    let dst_file = &format!("{}/{}", &project.get_release_path().to_str().unwrap(), get_love_file_name(&project));
+    println!("Outputting LÖVE as {}", dst_file);
 
-    match collect_zip_directory(src_dir, dst_file.as_str(), method.unwrap(), build_settings) {
+    match collect_zip_directory(src_dir, dst_file, method, build_settings) {
         Ok(_) => {
             println!("done: {} written to {}", src_dir, dst_file);
         },
@@ -100,6 +130,9 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
     }
 }
 
+//
+// Windows .exe build
+//
 pub fn build_windows(project: &Project, version: &LoveVersion, bitness: &Bitness) {
     unsafe {
         if !IS_LOVE_BUILT {
@@ -116,11 +149,30 @@ pub fn build_windows(project: &Project, version: &LoveVersion, bitness: &Bitness
         panic!();
     }
 
-    let output_file_name = get_output_filename(project, &Platform::Windows, bitness);
-    let output_path = Path::new(output_file_name.as_str());
+    let exe_file_name = get_output_filename(project, &Platform::Windows, bitness);
+    let zip_output_file_name = get_zip_output_filename(project, &Platform::Windows, bitness);
+    let mut output_path = project.get_release_path();
+    output_path.push(zip_output_file_name);
+
+    println!("Removing existing directory {}", output_path.display());
+    if output_path.exists() {
+        match std::fs::remove_dir_all(&output_path) {
+            Ok(_) => {},
+            Err(err) => panic!("Could not remove directory: '{}'", err)
+        };
+    }
+
+    // Create temp directory to be zipped and removed later
+    match std::fs::create_dir(&output_path) {
+        Ok(_) => {},
+        Err(err) => panic!("Could not create build directory: '{}'", err)
+    };
+
+    output_path.push(exe_file_name);
 
     println!("Copying love from {}", love_exe_path.display());
 
+    println!("Outputting exe to {}", output_path.display());
     let mut output_file = match File::create(&output_path) {
         Ok(file) => file,
         Err(why) => {
@@ -129,11 +181,14 @@ pub fn build_windows(project: &Project, version: &LoveVersion, bitness: &Bitness
     };
 
     let love_file_name = get_love_file_name(&project);
-    let local_love_file_path = &format!("./{}", love_file_name);
+    let local_love_file_path = &format!("{}/{}", project.get_release_path().to_str().unwrap(), love_file_name);
+    let local_love_file_path = Path::new(local_love_file_path);
+
+    println!("Copying project .love from {}", local_love_file_path.display());
 
     let paths = &[
         love_exe_path.as_path(),
-        Path::new(local_love_file_path),
+        local_love_file_path,
     ];
 
     let mut buffer = Vec::new();
@@ -159,6 +214,9 @@ pub fn build_windows(project: &Project, version: &LoveVersion, bitness: &Bitness
     }
 }
 
+//
+// macOS .app build
+//
 pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) {
     unsafe {
         if !IS_LOVE_BUILT {
@@ -173,8 +231,9 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
     }
 
     let output_file_name = get_output_filename(project, &Platform::MacOs, bitness);
-    let output_path = Path::new(".");
-    let final_output_path = PathBuf::from(format!("./{}", output_file_name));
+    let output_path = project.get_release_path();
+    let final_output_path = &format!("{}/{}", project.get_release_path().to_str().unwrap(), output_file_name);
+    let final_output_path = PathBuf::from(final_output_path);
 
     println!("Copying LÖVE from {} to {}", love_path.display(), output_path.display());
 
@@ -185,7 +244,7 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
         Err(err) => panic!("{:?}", err)
     };
 
-    let local_love_app_path = &format!("./{}", love_path.file_name().unwrap().to_str().unwrap());
+    let local_love_app_path = &format!("{}/{}", project.get_release_path().to_str().unwrap(), love_path.file_name().unwrap().to_str().unwrap());
     let local_love_app_path = PathBuf::from(local_love_app_path);
 
     if final_output_path.exists() {
@@ -203,10 +262,11 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
     };
 
     let love_file_name = get_love_file_name(&project);
-    let local_love_file_path = &format!("./{}", love_file_name);
+    let local_love_file_path = &format!("{}/{}", project.get_release_path().to_str().unwrap(), love_file_name);
+    let local_love_file_path = Path::new(local_love_file_path);
     let resources_path = &format!("{}/Contents/Resources/{}", final_output_path.display(), love_file_name);
     let resources_path = Path::new(resources_path);
-    println!("Copying .love file from {} to {}", local_love_file_path, resources_path.display());
+    println!("Copying .love file from {} to {}", local_love_file_path.display(), resources_path.display());
 
     let mut copy_options = fs_extra::file::CopyOptions::new();
     copy_options.overwrite = true;
@@ -273,7 +333,7 @@ fn should_exclude_file(file_name: String, build_settings: &BuildSettings) -> boo
         }
     }
 
-    return false
+     false
 }
 
 fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod, build_settings: &BuildSettings)
@@ -295,9 +355,38 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
 
         if path.is_file() && !should_exclude_file(name.to_string(), build_settings) {
             println!("adding {:?} ...", name);
-            //println!("adding as {:?} ...", path, name);
             zip.start_file(name, options)?;
             let mut f = File::open(path)?;
+
+            f.read_to_end(&mut buffer)?;
+            zip.write_all(&*buffer)?;
+            buffer.clear();
+        }
+    }
+    zip.finish()?;
+    Result::Ok(())
+}
+
+fn zip_paths<T>(paths: &mut Iterator<Item=PathBuf>, prefix: &str, writer: T, method: zip::CompressionMethod, build_settings: &BuildSettings)
+              -> zip::result::ZipResult<()>
+    where T: Write+Seek
+{
+    let mut zip = zip::ZipWriter::new(writer);
+    let options = FileOptions::default()
+        .compression_method(method)
+        .unix_permissions(0o644);
+
+    let mut buffer = Vec::new();
+    for path in paths {
+        let name = path.strip_prefix(Path::new(prefix))
+            .unwrap()
+            .to_str()
+            .unwrap();
+
+        if path.is_file() && !should_exclude_file(name.to_string(), build_settings) {
+            println!("adding {:?} ...", name);
+            zip.start_file(name, options)?;
+            let mut f = File::open(&path)?;
 
             f.read_to_end(&mut buffer)?;
             zip.write_all(&*buffer)?;
@@ -322,4 +411,45 @@ fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::Compression
     zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method, build_settings)?;
 
     Ok(())
+}
+
+fn collect_subpaths(dir: &str) -> Vec<PathBuf> {
+    let walkdir = WalkDir::new(dir.to_string());
+    let it = walkdir.into_iter();
+    it.map(|e| e.ok().unwrap().path().to_owned()).collect::<Vec<PathBuf>>()
+}
+
+fn zip_items<P>(paths: &Vec<PathBuf>, src_dir: &str, dst_file: &str, method: zip::CompressionMethod, build_settings: &BuildSettings) -> zip::result::ZipResult<()>
+{
+    let mut collected_paths: Vec<PathBuf> = Vec::new();
+    for path in paths {
+        let path = PathBuf::from(path);
+
+        if !path.exists() {
+            return Err(ZipError::FileNotFound);
+        }
+
+        if path.is_file() {
+            collected_paths.push(path);
+        } else if path.is_dir() {
+            collected_paths.append(&mut collect_subpaths(path.to_str().unwrap()));
+        }
+    }
+
+    let file = File::create(&Path::new(dst_file)).unwrap();
+    let mut it = collected_paths.into_iter();
+
+    zip_paths(&mut it, src_dir, file, method, build_settings)?;
+
+    Ok(())
+}
+
+impl Project {
+    fn get_release_path(&self) -> PathBuf {
+        let mut path = Path::new(self.directory.as_str())
+            .canonicalize()
+            .unwrap();
+        path.push("release");
+        path
+    }
 }
