@@ -113,7 +113,9 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
     let method = zip::CompressionMethod::Deflated;
 
     let src_dir = &project.directory;
-    let dst_file = &format!("{}/{}", &project.get_release_path().to_str().unwrap(), get_love_file_name(&project));
+
+    let love_path = project.get_release_path().join(get_love_file_name(&project));
+    let dst_file = love_path.to_str().unwrap();
     println!("Outputting LÖVE as {}", dst_file);
 
     match collect_zip_directory(src_dir, dst_file, method, build_settings) {
