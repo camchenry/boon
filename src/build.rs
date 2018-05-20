@@ -9,8 +9,6 @@ use types::*;
 use APP_INFO;
 use app_dirs::*;
 
-use ::{Platform, Bitness};
-
 use std::io::prelude::*;
 use std::iter::Iterator;
 use std::io::{Write, Seek};
@@ -62,14 +60,14 @@ pub fn get_zip_output_filename(project: &Project, platform: &Platform, bitness: 
 /// Get a platform-specific path to the app cache directory where LÖVE is stored.
 pub fn get_love_version_path(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> PathBuf {
     let filename = get_love_version_file_name(version, platform, bitness);
-    let subdirectory = &format!("{}/{}", version.to_string(), filename);
+    let subdirectory = &format!("{1}{0}{2}", std::path::MAIN_SEPARATOR, version.to_string(), filename);
 
     get_app_dir(AppDataType::UserData, &APP_INFO, subdirectory).unwrap()
 }
 
 // TODO: check CONFIG to see if DEBUG set to true should halt building process
 pub fn scan_files(project: &Project, build_settings: &BuildSettings) {
-    let globals_file = format!("{}{}", project.directory, "/globals.lua");
+    let globals_file = format!("{1}{0}{2}", std::path::MAIN_SEPARATOR, project.directory, "globals.lua");
     println!("Looking for globals.lua at: {}", globals_file);
 
     let mut f = File::open(globals_file).expect("file not found");
@@ -113,12 +111,13 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
     let method = zip::CompressionMethod::Deflated;
 
     let src_dir = &project.directory;
-    let dst_file = &format!("{}/{}", &project.get_release_path().to_str().unwrap(), get_love_file_name(&project));
-    println!("Outputting LÖVE as {}", dst_file);
+    let mut dst_file = PathBuf::from(&project.get_release_path());
+    dst_file.push(get_love_file_name(&project));
+    println!("Outputting LÖVE as {}", dst_file.display());
 
-    match collect_zip_directory(src_dir, dst_file, method, build_settings) {
+    match collect_zip_directory(src_dir, dst_file.to_str().unwrap(), method, build_settings) {
         Ok(_) => {
-            println!("done: {} written to {}", src_dir, dst_file);
+            println!("done: {} written to {}", src_dir, dst_file.display());
         },
         Err(e) => {
             println!("Error: {:?}", e);
@@ -142,8 +141,8 @@ pub fn build_windows(project: &Project, version: &LoveVersion, bitness: &Bitness
 
     let app_dir_path = get_love_version_path(version, &Platform::Windows, bitness);
 
-    let mut love_exe_path = PathBuf::new();
-    love_exe_path.push(&format!("{}/love.exe", &app_dir_path.display()));
+    let mut love_exe_path = PathBuf::from(app_dir_path);
+    love_exe_path.push("love.exe");
     if !love_exe_path.exists() {
         println!("\nlove.exe not found at '{}'\nYou may need to download LÖVE first: `love-kit download {}`", love_exe_path.display(), version.to_string());
         panic!();
@@ -181,14 +180,14 @@ pub fn build_windows(project: &Project, version: &LoveVersion, bitness: &Bitness
     };
 
     let love_file_name = get_love_file_name(&project);
-    let local_love_file_path = &format!("{}/{}", project.get_release_path().to_str().unwrap(), love_file_name);
-    let local_love_file_path = Path::new(local_love_file_path);
+    let mut local_love_file_path = PathBuf::from(project.get_release_path());
+    local_love_file_path.push(love_file_name);
 
     println!("Copying project .love from {}", local_love_file_path.display());
 
     let paths = &[
         love_exe_path.as_path(),
-        local_love_file_path,
+        local_love_file_path.as_path(),
     ];
 
     let mut buffer = Vec::new();
@@ -232,8 +231,8 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
 
     let output_file_name = get_output_filename(project, &Platform::MacOs, bitness);
     let output_path = project.get_release_path();
-    let final_output_path = &format!("{}/{}", project.get_release_path().to_str().unwrap(), output_file_name);
-    let final_output_path = PathBuf::from(final_output_path);
+    let mut final_output_path = PathBuf::from(project.get_release_path());
+    final_output_path.push(output_file_name);
 
     println!("Copying LÖVE from {} to {}", love_path.display(), output_path.display());
 
@@ -244,8 +243,8 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
         Err(err) => panic!("{:?}", err)
     };
 
-    let local_love_app_path = &format!("{}/{}", project.get_release_path().to_str().unwrap(), love_path.file_name().unwrap().to_str().unwrap());
-    let local_love_app_path = PathBuf::from(local_love_app_path);
+    let mut local_love_app_path = PathBuf::from(project.get_release_path());
+    local_love_app_path.push(love_path.file_name().unwrap().to_str().unwrap());
 
     if final_output_path.exists() {
         println!("Removing {}", final_output_path.display());
@@ -262,10 +261,12 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
     };
 
     let love_file_name = get_love_file_name(&project);
-    let local_love_file_path = &format!("{}/{}", project.get_release_path().to_str().unwrap(), love_file_name);
-    let local_love_file_path = Path::new(local_love_file_path);
-    let resources_path = &format!("{}/Contents/Resources/{}", final_output_path.display(), love_file_name);
-    let resources_path = Path::new(resources_path);
+    let mut local_love_file_path = PathBuf::from(project.get_release_path());
+    local_love_file_path.push(love_file_name);
+    let mut resources_path = PathBuf::from(&final_output_path);
+    resources_path.push("Contents");
+    resources_path.push("Resources");
+    resources_path.push("love_file_name");
     println!("Copying .love file from {} to {}", local_love_file_path.display(), resources_path.display());
 
     let mut copy_options = fs_extra::file::CopyOptions::new();
@@ -276,15 +277,16 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
     };
 
     // Rewrite plist file
-    let plist_path = &format!("{}/Contents/Info.plist", final_output_path.display());
-    let plist_path = Path::new(plist_path);
+    let mut plist_path = PathBuf::from(&final_output_path);
+    plist_path.push("Contents");
+    plist_path.push("Info.plist");
 
     println!("Rewriting {}", plist_path.display());
 
     let mut buffer = String::new();
     let mut file = match std::fs::OpenOptions::new()
         .read(true)
-        .open(plist_path) {
+        .open(&plist_path) {
         Ok(file) => file,
         Err(why) => panic!("Could not open file: {}", why),
     };
@@ -313,7 +315,7 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
     let mut file = match std::fs::OpenOptions::new()
         .write(true)
         .truncate(true)
-        .open(plist_path) {
+        .open(&plist_path) {
         Ok(file) => file,
         Err(why) => panic!("Could not open file: {}", why),
     };
