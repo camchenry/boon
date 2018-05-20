@@ -111,13 +111,13 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
     let method = zip::CompressionMethod::Deflated;
 
     let src_dir = &project.directory;
-    let mut dst_file = PathBuf::from(&project.get_release_path());
-    dst_file.push(get_love_file_name(&project));
-    println!("Outputting LÖVE as {}", dst_file.display());
+    let love_path = project.get_release_path().join(get_love_file_name(&project));
+    let dst_file = love_path.to_str().unwrap();
+    println!("Outputting LÖVE as {}", dst_file);
 
-    match collect_zip_directory(src_dir, dst_file.to_str().unwrap(), method, build_settings) {
+    match collect_zip_directory(src_dir, dst_file, method, build_settings) {
         Ok(_) => {
-            println!("done: {} written to {}", src_dir, dst_file.display());
+            println!("done: {} written to {}", src_dir, dst_file);
         },
         Err(e) => {
             println!("Error: {:?}", e);
