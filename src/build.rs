@@ -60,9 +60,11 @@ pub fn get_zip_output_filename(project: &Project, platform: &Platform, bitness: 
 /// Get a platform-specific path to the app cache directory where LÖVE is stored.
 pub fn get_love_version_path(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> PathBuf {
     let filename = get_love_version_file_name(version, platform, bitness);
-    let subdirectory = &format!("{1}{0}{2}", std::path::MAIN_SEPARATOR, version.to_string(), filename);
 
-    get_app_dir(AppDataType::UserData, &APP_INFO, subdirectory).unwrap()
+    // @DoNotFix: The forward slash here is intentional. It will get escaped by
+    // get_app_dir automatically to match the OS preference.
+    let subdirectory = format!("{}/{}", &version.to_string(), &filename);
+    get_app_dir(AppDataType::UserData, &APP_INFO, &subdirectory).unwrap()
 }
 
 // TODO: check CONFIG to see if DEBUG set to true should halt building process
