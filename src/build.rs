@@ -3,6 +3,7 @@ extern crate zip;
 extern crate config;
 extern crate fs_extra;
 extern crate regex;
+extern crate remove_dir_all;
 
 use types::*;
 
@@ -19,6 +20,7 @@ use std::fs::File;
 use zip::result::ZipError;
 use zip::write::FileOptions;
 use walkdir::{WalkDir, DirEntry};
+use remove_dir_all::*;
 
 static mut IS_LOVE_BUILT: bool = false;
 
@@ -117,7 +119,7 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
     let dst_file = love_path.to_str().unwrap();
     println!("Outputting LÖVE as {}", dst_file);
 
-    match collect_zip_directory(src_dir, dst_file, method, build_settings) {
+    match collect_zip_directory(src_dir, dst_file, method, &build_settings.ignore_list) {
         Ok(_) => {
             println!("done: {} written to {}", src_dir, dst_file);
         },
@@ -134,7 +136,7 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
 //
 // Windows .exe build
 //
-pub fn build_windows(project: &Project, version: &LoveVersion, bitness: &Bitness) {
+pub fn build_windows(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for windows because .love not built.");
@@ -213,12 +215,40 @@ pub fn build_windows(project: &Project, version: &LoveVersion, bitness: &Bitness
             buffer.clear();
         }
     }
+
+    // Time to zip up the whole directory
+    let zip_output_file_name = get_zip_output_filename(project, &Platform::Windows, bitness);
+    let output_path = project.get_release_path().join(zip_output_file_name);
+
+    let src_dir = output_path.clone();
+    let src_dir = src_dir.to_str().unwrap();
+
+    let mut dst_file = output_path.clone();
+    dst_file.set_extension("zip");
+    let dst_file = dst_file.to_str().unwrap();
+    
+    let method = zip::CompressionMethod::Deflated;
+    let ignore_list: &Vec<String> = &vec!();
+    match collect_zip_directory(src_dir, dst_file, method, ignore_list) {
+        Ok(_) => {
+            println!("done: {} written to {}", src_dir, dst_file);
+        },
+        Err(e) => {
+            println!("Error: {:?}", e);
+        }
+    }
+    let path = PathBuf::new().join(src_dir);
+    println!("Removing {}", path.display());
+    match remove_dir_all(&path) {
+        Ok(_) => {},
+        Err(err) => panic!("{:?}", err)
+    };
 }
 
 //
 // macOS .app build
 //
-pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) {
+pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for macOS because .love not built.");
@@ -328,19 +358,17 @@ pub fn build_macos(project: &Project, version: &LoveVersion, bitness: &Bitness) 
     };
 }
 
-fn should_exclude_file(file_name: String, build_settings: &BuildSettings) -> bool {
-    let ignore_list = build_settings.ignore_list.clone();
-
+fn should_exclude_file(file_name: String, ignore_list: &Vec<String>) -> bool {
     for exclude_name in ignore_list {
-        if file_name.find(&exclude_name) != None {
+        if file_name.find(exclude_name) != None {
             return true;
         }
     }
 
-     false
+    false
 }
 
-fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod, build_settings: &BuildSettings)
+fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod, ignore_list: &Vec<String>)
               -> zip::result::ZipResult<()>
     where T: Write+Seek
 {
@@ -357,7 +385,7 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
             .to_str()
             .unwrap();
 
-        if path.is_file() && !should_exclude_file(name.to_string(), build_settings) {
+        if path.is_file() && !should_exclude_file(name.to_string(), &ignore_list) {
             println!("adding {:?} ...", name);
             zip.start_file(name, options)?;
             let mut f = File::open(path)?;
@@ -371,37 +399,7 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
     Result::Ok(())
 }
 
-fn zip_paths<T>(paths: &mut Iterator<Item=PathBuf>, prefix: &str, writer: T, method: zip::CompressionMethod, build_settings: &BuildSettings)
-              -> zip::result::ZipResult<()>
-    where T: Write+Seek
-{
-    let mut zip = zip::ZipWriter::new(writer);
-    let options = FileOptions::default()
-        .compression_method(method)
-        .unix_permissions(0o644);
-
-    let mut buffer = Vec::new();
-    for path in paths {
-        let name = path.strip_prefix(Path::new(prefix))
-            .unwrap()
-            .to_str()
-            .unwrap();
-
-        if path.is_file() && !should_exclude_file(name.to_string(), build_settings) {
-            println!("adding {:?} ...", name);
-            zip.start_file(name, options)?;
-            let mut f = File::open(&path)?;
-
-            f.read_to_end(&mut buffer)?;
-            zip.write_all(&*buffer)?;
-            buffer.clear();
-        }
-    }
-    zip.finish()?;
-    Result::Ok(())
-}
-
-fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod, build_settings: &BuildSettings) -> zip::result::ZipResult<()> {
+fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod, ignore_list: &Vec<String>) -> zip::result::ZipResult<()> {
     if !Path::new(src_dir).is_dir() {
         return Err(ZipError::FileNotFound);
     }
@@ -412,38 +410,7 @@ fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::Compression
     let walkdir = WalkDir::new(src_dir.to_string());
     let it = walkdir.into_iter();
 
-    zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method, build_settings)?;
-
-    Ok(())
-}
-
-fn collect_subpaths(dir: &str) -> Vec<PathBuf> {
-    let walkdir = WalkDir::new(dir.to_string());
-    let it = walkdir.into_iter();
-    it.map(|e| e.ok().unwrap().path().to_owned()).collect::<Vec<PathBuf>>()
-}
-
-fn zip_items<P>(paths: &Vec<PathBuf>, src_dir: &str, dst_file: &str, method: zip::CompressionMethod, build_settings: &BuildSettings) -> zip::result::ZipResult<()>
-{
-    let mut collected_paths: Vec<PathBuf> = Vec::new();
-    for path in paths {
-        let path = PathBuf::from(path);
-
-        if !path.exists() {
-            return Err(ZipError::FileNotFound);
-        }
-
-        if path.is_file() {
-            collected_paths.push(path);
-        } else if path.is_dir() {
-            collected_paths.append(&mut collect_subpaths(path.to_str().unwrap()));
-        }
-    }
-
-    let file = File::create(&Path::new(dst_file)).unwrap();
-    let mut it = collected_paths.into_iter();
-
-    zip_paths(&mut it, src_dir, file, method, build_settings)?;
+    zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method, ignore_list)?;
 
     Ok(())
 }

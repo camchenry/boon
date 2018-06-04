@@ -5,6 +5,7 @@ extern crate zip;
 extern crate reqwest;
 extern crate config;
 extern crate regex;
+extern crate remove_dir_all;
 
 mod types;
 use types::*;
@@ -99,12 +100,12 @@ fn main() {
                 }
                 Some("windows") => {
                     build::build_love(&project, &build_settings);
-                    build::build_windows(&project, &version, &Bitness::X86);
-                    build::build_windows(&project, &version, &Bitness::X64);
+                    build::build_windows(&project, &build_settings, &version, &Bitness::X86);
+                    build::build_windows(&project, &build_settings, &version, &Bitness::X64);
                 }
                 Some("macos") => {
                     build::build_love(&project, &build_settings);
-                    build::build_macos(&project, &version, &Bitness::X64);
+                    build::build_macos(&project, &build_settings, &version, &Bitness::X64);
                 }
                 _ => {}
             }
