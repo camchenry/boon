@@ -6,6 +6,7 @@ extern crate reqwest;
 extern crate config;
 extern crate regex;
 extern crate remove_dir_all;
+extern crate glob;
 
 mod types;
 use types::*;

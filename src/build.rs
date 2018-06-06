@@ -4,6 +4,7 @@ extern crate config;
 extern crate fs_extra;
 extern crate regex;
 extern crate remove_dir_all;
+extern crate glob;
 
 use types::*;
 
@@ -21,6 +22,8 @@ use zip::result::ZipError;
 use zip::write::FileOptions;
 use walkdir::{WalkDir, DirEntry};
 use remove_dir_all::*;
+
+use glob::glob;
 
 static mut IS_LOVE_BUILT: bool = false;
 
@@ -145,6 +148,9 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
 
     let app_dir_path = get_love_version_path(version, &Platform::Windows, bitness);
 
+    let mut app_dir_path_clone = PathBuf::new();
+    app_dir_path_clone.clone_from(&app_dir_path);
+
     let mut love_exe_path = PathBuf::from(app_dir_path);
     love_exe_path.push("love.exe");
     if !love_exe_path.exists() {
@@ -153,7 +159,7 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     }
 
     let exe_file_name = get_output_filename(project, &Platform::Windows, bitness);
-    let zip_output_file_name = get_zip_output_filename(project, &Platform::Windows, bitness);
+    let zip_output_file_name = &get_zip_output_filename(project, &Platform::Windows, bitness);
     let mut output_path = project.get_release_path();
     output_path.push(zip_output_file_name);
 
@@ -188,6 +194,34 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     local_love_file_path.push(love_file_name);
 
     println!("Copying project .love from {}", local_love_file_path.display());
+
+    let mut copy_options = fs_extra::file::CopyOptions::new();
+    copy_options.overwrite = true;
+
+    // copy all .dll, .txt, and .ico files from the love source
+    let search_for_files_dll = app_dir_path_clone.join("*.dll");
+    let search_for_files_txt = app_dir_path_clone.join("*.txt");
+    let search_for_files_ico = app_dir_path_clone.join("*.ico");
+    for entry in glob(search_for_files_dll.to_str().unwrap()).unwrap().chain(
+                 glob(search_for_files_txt.to_str().unwrap()).unwrap()).chain(
+                 glob(search_for_files_ico.to_str().unwrap()).unwrap()) {
+        match entry {
+            Ok(path) => {
+                let local_file_name = path.file_name().unwrap().to_str().unwrap();
+                //println!("Local file name: {}", local_file_name);
+                //println!("copying {:?} to {}", path.display(), project.get_release_path().join(zip_output_file_name).join(local_file_name).display());
+
+                match fs_extra::file::copy(&path, &project.get_release_path().join(zip_output_file_name).join(local_file_name), &copy_options) {
+                    Ok(_) => {},
+                    Err(err) => panic!("{:?}", err)
+                };
+            },
+
+            // if the path matched but was unreadable,
+            // thereby preventing its contents from matching
+            Err(e) => println!("{:?}", e),
+        }
+    }
 
     let paths = &[
         love_exe_path.as_path(),
