@@ -37,7 +37,9 @@ pub enum Bitness {
 /// Represents a specific version of LÖVE2D
 #[derive(Debug)]
 pub enum LoveVersion {
+    V11_2,
     V11_1,
+    V11_0,
     V0_10_2,
 }
 
@@ -54,8 +56,10 @@ impl FromStr for LoveVersion {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err>{
         match s {
+            "11.2" => Ok(LoveVersion::V11_2),
             "11.1" => Ok(LoveVersion::V11_1),
-            "11.1.0" => Ok(LoveVersion::V11_1),
+            "11.0" => Ok(LoveVersion::V11_0),
+            "11.0.0" => Ok(LoveVersion::V11_0),
             "0.10.2" => Ok(LoveVersion::V0_10_2),
             _ => Err(()),
         }
@@ -67,7 +71,9 @@ impl ToString for LoveVersion {
         use types::LoveVersion::*;
 
         match self {
+            &V11_2 => "11.2",
             &V11_1 => "11.1",
+            &V11_0 => "11.0",
             &V0_10_2 => "0.10.2",
         }.to_string()
     }

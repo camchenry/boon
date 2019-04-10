@@ -30,9 +30,18 @@ static mut IS_LOVE_BUILT: bool = false;
 /// Get the folder name of where a version of LÖVE is stored in the app cache
 pub fn get_love_version_file_name(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> String {
     match (version, platform, bitness) {
-        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X64) => "love-11.1.0-win64",
-        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X86) => "love-11.1.0-win32",
+        (&LoveVersion::V11_2,   &Platform::Windows, &Bitness::X64) => "love-11.2-win64",
+        (&LoveVersion::V11_2,   &Platform::Windows, &Bitness::X86) => "love-11.2-win32",
+        (&LoveVersion::V11_2,   &Platform::MacOs,   _)             => "love.app",
+
+        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X64) => "love-11.1-win64",
+        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X86) => "love-11.1-win32",
         (&LoveVersion::V11_1,   &Platform::MacOs,   _)             => "love.app",
+
+        (&LoveVersion::V11_0,   &Platform::Windows, &Bitness::X64) => "love-11.0.0-win64",
+        (&LoveVersion::V11_0,   &Platform::Windows, &Bitness::X86) => "love-11.0.0-win32",
+        (&LoveVersion::V11_0,   &Platform::MacOs,   _)             => "love.app",
+
         (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X64) => "love-0.10.2-win64",
         (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X86) => "love-0.10.2-win32",
         (&LoveVersion::V0_10_2, &Platform::MacOs,   _)             => "love.app",

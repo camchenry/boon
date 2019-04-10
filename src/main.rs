@@ -23,11 +23,9 @@ const APP_INFO: AppInfo = AppInfo {
 };
 
 fn main() {
-    let targets = &["love", "windows", "macos"];
-
     // @TODO: Get values from local project config
     // load in config from Settings file
-    let mut settings = config::Config::default();
+    let mut settings = config::Config::new();
     settings
         // Add in `./Settings.toml`
         .merge(config::File::with_name("Settings")).unwrap();
@@ -36,6 +34,16 @@ fn main() {
         debug_halt: settings.get("build.debug_halt").unwrap(),
         ignore_list: settings.get("build.ignore_list").unwrap()
     };
+
+    let targets = &["love", "windows", "macos"];
+
+    let default_love_version = "11.2";
+    let available_love_versions = &[
+        "11.2",
+        "11.1",
+        "11.0",
+        "0.10.2",
+    ];
 
     let subcmd_build = SubCommand::with_name("build")
         .about("Build game for a target platform")
@@ -49,8 +57,8 @@ fn main() {
              .takes_value(true)
             )
         .arg(Arg::from_usage("-v, --version 'Specify which target version of LÖVE to build for'")
-             .default_value("11.1")
-             .possible_values(&["11.1", "0.10.2"])
+             .default_value(default_love_version)
+             .possible_values(available_love_versions)
             );
 
     let subcmd_download = SubCommand::with_name("download")
@@ -58,7 +66,7 @@ fn main() {
         .arg(Arg::with_name("VERSION")
              .required(true)
              .takes_value(true)
-             .possible_values(&["11.1", "0.10.2"])
+             .possible_values(available_love_versions)
             );
 
     let app_m = App::new("love-kit")
