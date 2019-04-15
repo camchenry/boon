@@ -1,3 +1,6 @@
+trigger:
+  - master
+
 jobs:
   - job: 'Build'
     strategy:
@@ -29,9 +32,6 @@ jobs:
         displayName: Cargo test
 
   - job: 'BuildRelease'
-    trigger:
-      branches:
-        include: ['master']
     steps:
       - bash: |
           MY_TAG="latest"
