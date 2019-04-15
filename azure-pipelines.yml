@@ -1,6 +1,7 @@
 trigger:
   - master
 
+
 jobs:
   - job: 'Build'
     strategy:
