@@ -29,6 +29,7 @@ jobs:
         displayName: Cargo test
 
   - job: 'BuildRelease'
+    dependsOn: 'Build'
     steps:
       - bash: |
           MY_TAG="latest"
