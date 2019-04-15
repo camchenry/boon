@@ -1,7 +1,7 @@
 jobs:
   - job: 'Clippy'
     pool:
-      vmImage: 'ubuntu-18.04'
+      vmImage: 'ubuntu-16.04'
       container: 'rust:latest'
       steps:
         - script: rustup component add clippy
@@ -21,7 +21,7 @@ jobs:
         nightly:
           rustup_toolchain: nightly
     pool:
-      vmImage: 'ubuntu-18.04'
+      vmImage: 'ubuntu-16.04'
     steps:
       - script: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
