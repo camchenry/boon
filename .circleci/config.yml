@@ -8,7 +8,7 @@ jobs:
             - checkout
             - run:
                 name: Test
-                command: rustup run stable cargo test
+                command: cargo test
     build:
         docker:
             - image: circleci/rust:latest
@@ -20,9 +20,9 @@ jobs:
             - run:
                 name: Stable Build
                 command: |
-                    rustup run stable rustc --version --verbose
-                    rustup run stable cargo --version --verbose
-                    rustup run stable cargo build
+                    rustc --version --verbose
+                    cargo --version --verbose
+                    cargo build
             - save_cache:
                 key: project-cache
                 paths:
