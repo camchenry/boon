@@ -17,29 +17,29 @@ jobs:
             # the example.
             - image: circleci/rust:latest
 
-              steps:
-                  - checkout
-                  - restore_cache:
-                      key: project-cache
-                  - run:
-                      name: Check formatting
-                      command: |
-                          rustfmt --version
-                          cargo fmt -- --write-mode=diff
-                  - run:
-                      name: Nightly Build
-                      command: |
-                          rustup run nightly rustc --version --verbose
-                          rustup run nightly cargo --version --verbose
-                          rustup run nightly cargo build
-                  - run:
-                      name: Stable Build
-                      command: |
-                          rustup run stable rustc --version --verbose
-                          rustup run stable cargo --version --verbose
-                          rustup run stable cargo build
-                  - save_cache:
-                      key: project-cache
-                      paths:
-                          - "~/.cargo"
-                          - "./target"
+        steps:
+            - checkout
+            - restore_cache:
+                key: project-cache
+            - run:
+                name: Check formatting
+                command: |
+                    rustfmt --version
+                    cargo fmt -- --write-mode=diff
+            - run:
+                name: Nightly Build
+                command: |
+                    rustup run nightly rustc --version --verbose
+                    rustup run nightly cargo --version --verbose
+                    rustup run nightly cargo build
+            - run:
+                name: Stable Build
+                command: |
+                    rustup run stable rustc --version --verbose
+                    rustup run stable cargo --version --verbose
+                    rustup run stable cargo build
+            - save_cache:
+                key: project-cache
+                paths:
+                    - "~/.cargo"
+                    - "./target"
