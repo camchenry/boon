@@ -18,8 +18,8 @@ use clap::{App, Arg, SubCommand};
 use app_dirs::*;
 
 const APP_INFO: AppInfo = AppInfo {
-    name: "love-kit",
-    author: "love-kit"
+    name: "boon",
+    author: "boon"
 };
 
 fn main() {
@@ -28,7 +28,7 @@ fn main() {
     let mut settings = config::Config::new();
     settings
         // Add in `./Settings.toml`
-        .merge(config::File::with_name("Settings")).unwrap();
+        .merge(config::File::with_name("Boon")).unwrap();
 
     let build_settings = BuildSettings {
         debug_halt: settings.get("build.debug_halt").unwrap(),
@@ -69,10 +69,10 @@ fn main() {
              .possible_values(available_love_versions)
             );
 
-    let app_m = App::new("love-kit")
+    let app_m = App::new("boon")
         .version("1.0")
         .author("Cameron McHenry")
-        .about("LÖVE2D Kit build/deploy tool")
+        .about("boon: LÖVE2D build and deploy tool")
         .subcommand(subcmd_build)
         .subcommand(subcmd_download)
         .get_matches();
