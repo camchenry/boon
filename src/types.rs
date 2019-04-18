@@ -46,8 +46,8 @@ pub enum LoveVersion {
 /// File info about remote download
 pub struct LoveVersionFileInfo<'a> {
     pub version: &'a LoveVersion,
-    pub platform: &'a ::Platform,
-    pub bitness: &'a ::Bitness,
+    pub platform: &'a crate::Platform,
+    pub bitness: &'a crate::Bitness,
     pub filename: &'a str,
     pub url: &'a str,
 }
@@ -68,7 +68,7 @@ impl FromStr for LoveVersion {
 
 impl ToString for LoveVersion {
     fn to_string(&self) -> String {
-        use types::LoveVersion::*;
+        use crate::types::LoveVersion::*;
 
         match self {
             &V11_2 => "11.2",

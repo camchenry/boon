@@ -1,12 +1,12 @@
 extern crate zip;
 extern crate std;
-use types::*;
+use crate::types::*;
 
 use app_dirs::*;
-use APP_INFO;
+use crate::APP_INFO;
 
 use reqwest;
-use ::{Platform, Bitness};
+use crate::{Platform, Bitness};
 
 use std::io::Write;
 use std::fs::File;

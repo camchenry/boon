@@ -6,9 +6,9 @@ extern crate regex;
 extern crate remove_dir_all;
 extern crate glob;
 
-use types::*;
+use crate::types::*;
 
-use APP_INFO;
+use crate::APP_INFO;
 use app_dirs::*;
 
 use std::io::prelude::*;
@@ -148,7 +148,7 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
 //
 // Windows .exe build
 //
-pub fn build_windows(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
+pub fn build_windows(project: &Project, _build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for windows because .love not built.");
@@ -291,7 +291,7 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
 //
 // macOS .app build
 //
-pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
+pub fn build_macos(project: &Project, _build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for macOS because .love not built.");
