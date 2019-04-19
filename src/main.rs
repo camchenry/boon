@@ -98,7 +98,7 @@ fn main() {
             );
 
     let app_m = App::new("boon")
-        .version("1.0")
+        .version("0.1.0")
         .author("Cameron McHenry")
         .about("boon: LÖVE2D build and deploy tool")
         .subcommand(subcmd_build)
