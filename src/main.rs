@@ -43,7 +43,6 @@ fn main() {
     let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
 
     if Path::new("Boon.toml").exists() {
-        println!("Config exists!");
         // Add in `./Boon.toml`
         settings.merge(config::File::with_name("Boon")).unwrap();
 
