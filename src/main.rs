@@ -16,19 +16,37 @@ mod build;
 
 use clap::{App, Arg, SubCommand};
 use app_dirs::*;
+use std::path::Path;
 
 const APP_INFO: AppInfo = AppInfo {
     name: "boon",
     author: "boon"
 };
 
+const DEFAULT_CONFIG: &str = include_str!("../Boon.toml");
+
 fn main() {
     // @TODO: Get values from local project config
     // load in config from Settings file
     let mut settings = config::Config::new();
-    settings
-        // Add in `./Settings.toml`
-        .merge(config::File::with_name("Boon")).unwrap();
+
+    let default_config = config::File::from_str(DEFAULT_CONFIG, config::FileFormat::Toml);
+
+    match settings.merge(default_config) {
+        Ok(_) => {},
+        _ => {
+            eprintln!("Could not set default configuration.");
+            std::process::exit(1);
+        }
+    }
+
+    if Path::new("Boon.toml").exists() {
+        println!("Config exists!");
+        // Add in `./Boon.toml`
+        settings.merge(config::File::with_name("Boon")).unwrap();
+    } else {
+        println!("Config doesn't exist.");
+    }
 
     let build_settings = BuildSettings {
         debug_halt: settings.get("build.debug_halt").unwrap(),
