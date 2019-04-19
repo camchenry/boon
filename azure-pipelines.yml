@@ -59,12 +59,12 @@ jobs:
       - script: |
           echo $(Build.SourcesDirectory)
           dir $(Build.SourcesDirectory)
-          echo $(Build.SourcesDirectory)/target
-          dir $(Build.SourcesDirectory)/target
-          echo $(Build.SourcesDirectory)/target/$(TARGET)
-          dir $(Build.SourcesDirectory)/target/$(TARGET)
-          echo $(Build.SourcesDirectory)/target/$(TARGET)/release
-          dir $(Build.SourcesDirectory)/target/$(TARGET)/release
+          echo $(Build.SourcesDirectory)\target
+          dir $(Build.SourcesDirectory)\target
+          echo $(Build.SourcesDirectory)\target\$(TARGET)
+          dir $(Build.SourcesDirectory)\target\$(TARGET)
+          echo $(Build.SourcesDirectory)\target\$(TARGET)\release
+          dir $(Build.SourcesDirectory)\target\$(TARGET)\release
           echo $(Build.BinariesDirectory)
           dir $(Build.BinariesDirectory)
         condition: eq( variables['Agent.OS'], 'Windows_NT' )
