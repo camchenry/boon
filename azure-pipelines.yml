@@ -4,7 +4,7 @@ jobs:
       matrix:
         windows-stable:
           imageName: 'vs2017-win2016'
-          target: 'x86_64-pc-windows-msvc'
+          target: 'x86_64-pc-windows-gnu'
           rustup_toolchain: stable
         mac-stable:
           imageName: 'macos-10.13'
