@@ -14,24 +14,27 @@ jobs:
           imageName: 'ubuntu-16.04'
           target: 'x86-64-unknown-linux-gnu'
           rustup_toolchain: stable
-        linux-beta:
-          imageName: 'ubuntu-16.04'
-          target: 'x86-64-unknown-linux-gnu'
-          rustup_toolchain: beta
-        linux-nightly:
-          imageName: 'ubuntu-16.04'
-          target: 'x86-64-unknown-linux-gnu'
-          rustup_toolchain: nightly
 
     pool:
       vmImage: $(imageName)
 
     steps:
       - template: '_build/install-rust.yml'
-      - script: cargo build --all --target $TARGET
-        displayName: Cargo build
-      - script: cargo test --all --target $TARGET
-        displayName: Cargo test
+      - script: |
+          set -eou
+          D=$(mktemp -d)
+          git clone https://github.com/rust-embedded/cross.git "$D"
+          cd "$D"
+          curl -O -L "https://gist.githubusercontent.com/nickbabcock/c7bdc8e5974ed9956abf46ffd7dc13ff/raw/e211bc17ea88e505003ad763fac7060b4ac1d8d0/patch"
+          git apply patch
+          cargo install --path .
+          rm -rf "$D"
+        displayName: Install cross
+      - script: cross build --all --target $TARGET
+        displayName: Build
+      - script: cross test --all --target $TARGET
+        displayName: Test
+
       - bash: |
           MY_TAG="latest"
           echo $MY_TAG
