@@ -4,18 +4,23 @@ jobs:
       matrix:
         windows-stable:
           imageName: 'vs2017-win2016'
+          target: 'x86_64-pc-windows-msvc'
           rustup_toolchain: stable
         mac-stable:
           imageName: 'macos-10.13'
+          target: 'x86_64-apple-darwin'
           rustup_toolchain: stable
         linux-stable:
           imageName: 'ubuntu-16.04'
+          target: 'x86-64-unknown-linux-gnu'
           rustup_toolchain: stable
         linux-beta:
           imageName: 'ubuntu-16.04'
+          target: 'x86-64-unknown-linux-gnu'
           rustup_toolchain: beta
         linux-nightly:
           imageName: 'ubuntu-16.04'
+          target: 'x86-64-unknown-linux-gnu'
           rustup_toolchain: nightly
 
     pool:
@@ -23,14 +28,10 @@ jobs:
 
     steps:
       - template: '_build/install-rust.yml'
-      - script: cargo build --all
+      - script: cargo build --all --target $TARGET
         displayName: Cargo build
-      - script: cargo test --all
+      - script: cargo test --all --target $TARGET
         displayName: Cargo test
-
-  - job: 'BuildRelease'
-    dependsOn: 'Build'
-    steps:
       - bash: |
           MY_TAG="latest"
           echo $MY_TAG
@@ -55,7 +56,7 @@ jobs:
           tarCompression: 'gz'
           archiveFile: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
       - task: GithubRelease@0
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq($(rustup_toolchain), 'stable'))
         inputs:
           gitHubConnection: 'camchenry'
           repositoryName: 'camchenry/boon'
