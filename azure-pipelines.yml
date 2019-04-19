@@ -30,9 +30,9 @@ jobs:
           cargo install --path .
           rm -rf "$D"
         displayName: Install cross
-      - script: cross build --all --target $TARGET
+      - script: cross build --release --all --target $TARGET
         displayName: Build
-      - script: cross test --all --target $TARGET
+      - script: cross test --release --all --target $TARGET
         displayName: Test
 
       - bash: |
