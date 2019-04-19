@@ -4,6 +4,7 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct BuildSettings<> {
+    pub output_directory: String,
     pub ignore_list: Vec<String>,
     pub exclude_default_ignore_list: bool,
 }

@@ -91,7 +91,7 @@ pub fn build_init(project: &Project, build_settings: &BuildSettings) {
     scan_files(&project, &build_settings);
 
     // Ensure release directory exists.
-    let release_dir_path = project.get_release_path();
+    let release_dir_path = project.get_release_path(&build_settings);
 
     if !release_dir_path.exists() {
         println!("Creating release directory {}", release_dir_path.display());
@@ -110,7 +110,7 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
     let method = zip::CompressionMethod::Deflated;
 
     let src_dir = &project.directory;
-    let love_path = project.get_release_path().join(get_love_file_name(&project));
+    let love_path = project.get_release_path(build_settings).join(get_love_file_name(&project));
     let dst_file = love_path.to_str().unwrap();
     println!("Outputting LÖVE as {}", dst_file);
 
@@ -131,7 +131,7 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
 //
 // Windows .exe build
 //
-pub fn build_windows(project: &Project, _build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
+pub fn build_windows(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for windows because .love not built.");
@@ -152,7 +152,7 @@ pub fn build_windows(project: &Project, _build_settings: &BuildSettings, version
 
     let exe_file_name = get_output_filename(project, &Platform::Windows, bitness);
     let zip_output_file_name = &get_zip_output_filename(project, &Platform::Windows, bitness);
-    let mut output_path = project.get_release_path();
+    let mut output_path = project.get_release_path(build_settings);
     output_path.push(zip_output_file_name);
 
     println!("Removing existing directory {}", output_path.display());
@@ -182,7 +182,7 @@ pub fn build_windows(project: &Project, _build_settings: &BuildSettings, version
     };
 
     let love_file_name = get_love_file_name(&project);
-    let mut local_love_file_path = PathBuf::from(project.get_release_path());
+    let mut local_love_file_path = PathBuf::from(project.get_release_path(build_settings));
     local_love_file_path.push(love_file_name);
 
     println!("Copying project .love from {}", local_love_file_path.display());
@@ -203,7 +203,7 @@ pub fn build_windows(project: &Project, _build_settings: &BuildSettings, version
                 //println!("Local file name: {}", local_file_name);
                 //println!("copying {:?} to {}", path.display(), project.get_release_path().join(zip_output_file_name).join(local_file_name).display());
 
-                match fs_extra::file::copy(&path, &project.get_release_path().join(zip_output_file_name).join(local_file_name), &copy_options) {
+                match fs_extra::file::copy(&path, &project.get_release_path(build_settings).join(zip_output_file_name).join(local_file_name), &copy_options) {
                     Ok(_) => {},
                     Err(err) => panic!("{:?}", err)
                 };
@@ -244,7 +244,7 @@ pub fn build_windows(project: &Project, _build_settings: &BuildSettings, version
 
     // Time to zip up the whole directory
     let zip_output_file_name = get_zip_output_filename(project, &Platform::Windows, bitness);
-    let output_path = project.get_release_path().join(zip_output_file_name);
+    let output_path = project.get_release_path(build_settings).join(zip_output_file_name);
 
     let src_dir = output_path.clone();
     let src_dir = src_dir.to_str().unwrap();
@@ -252,7 +252,7 @@ pub fn build_windows(project: &Project, _build_settings: &BuildSettings, version
     let mut dst_file = output_path.clone();
     dst_file.set_extension("zip");
     let dst_file = dst_file.to_str().unwrap();
-    
+
     let method = zip::CompressionMethod::Deflated;
     let ignore_list: &Vec<String> = &vec!();
     match collect_zip_directory(src_dir, dst_file, method, ignore_list) {
@@ -274,7 +274,7 @@ pub fn build_windows(project: &Project, _build_settings: &BuildSettings, version
 //
 // macOS .app build
 //
-pub fn build_macos(project: &Project, _build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
+pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for macOS because .love not built.");
@@ -288,8 +288,8 @@ pub fn build_macos(project: &Project, _build_settings: &BuildSettings, version: 
     }
 
     let output_file_name = get_output_filename(project, &Platform::MacOs, bitness);
-    let output_path = project.get_release_path();
-    let mut final_output_path = PathBuf::from(project.get_release_path());
+    let output_path = project.get_release_path(build_settings);
+    let mut final_output_path = PathBuf::from(project.get_release_path(build_settings));
     final_output_path.push(output_file_name);
 
     println!("Copying LÖVE from {} to {}", love_path.display(), output_path.display());
@@ -301,7 +301,7 @@ pub fn build_macos(project: &Project, _build_settings: &BuildSettings, version: 
         Err(err) => panic!("{:?}", err)
     };
 
-    let mut local_love_app_path = PathBuf::from(project.get_release_path());
+    let mut local_love_app_path = PathBuf::from(project.get_release_path(build_settings));
     local_love_app_path.push(love_path.file_name().unwrap().to_str().unwrap());
 
     if final_output_path.exists() {
@@ -319,7 +319,7 @@ pub fn build_macos(project: &Project, _build_settings: &BuildSettings, version: 
     };
 
     let love_file_name = get_love_file_name(&project);
-    let mut local_love_file_path = PathBuf::from(project.get_release_path());
+    let mut local_love_file_path = PathBuf::from(project.get_release_path(build_settings));
     local_love_file_path.push(love_file_name);
     let mut resources_path = PathBuf::from(&final_output_path);
     resources_path.push("Contents");
@@ -446,11 +446,11 @@ fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::Compression
 }
 
 impl Project {
-    fn get_release_path(&self) -> PathBuf {
+    fn get_release_path(&self, build_settings: &BuildSettings) -> PathBuf {
         let mut path = Path::new(self.directory.as_str())
             .canonicalize()
             .unwrap();
-        path.push("release");
+        path.push(build_settings.output_directory.as_str());
         path
     }
 }

@@ -1,14 +1,49 @@
+#
+# General project settings
+#
 [project]
+# Author information. If you have a company, then use that in this
+# field instead.
 authors = "Developer Name"
+
+# A description of your game. Not used in all builds.
 description = "Your description here."
+
+# An email to contact for support or more information. Not used
+# in all builds.
 email = "email@example.com"
+
+# A short abbreviated name. Ideally, it should not contain spaces
+# or other special characters, though they can be used. On Windows,
+# this will end up as the name of the executable file.
+# Example: "My Game" and package_name="my_game" becomes "my_game.exe"
 package_name = "my_game"
+
+# The name of your game. This will be used when distributing the Game
+# as a zip file. On macOS, this is also used as the app file name.
 title = "My Game"
+
+# The website associated with your game. Not used in all builds.
 url = "http://www.example.com/"
+
+# The Uniform Type Identifier for your game. This is required for the
+# macOS build of the game.
 uti = "com.company.mygame"
+
+# An arbitrary version for the current iteration of the game. Can use
+# any desired version format. This will be used to differentiate the
+# resulting build files.
 version = "v1.0"
 
+#
+# Build settings
+#
 [build]
+# The name of the directory where releases will be placed after building.
+# IMPORTANT: If you change this from the default, you should also change it in
+# IMPORTANT: ignore_list so that you do not add prebuilt files to your build.
+output_directory = "release"
+
 # List of patterns to exclude when building. Each item is a regular
 # expression, which when matched, will exclude the matched file or
 # directory from the build.

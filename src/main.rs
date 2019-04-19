@@ -58,6 +58,7 @@ fn main() {
     let build_settings = BuildSettings {
         ignore_list: ignore_list,
         exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list").unwrap(),
+        output_directory: settings.get("build.output_directory").unwrap(),
     };
 
     dbg!(&build_settings);
