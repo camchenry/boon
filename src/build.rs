@@ -81,30 +81,13 @@ pub fn get_love_version_path(version: &LoveVersion, platform: &Platform, bitness
     get_app_dir(AppDataType::UserData, &APP_INFO, &subdirectory).unwrap()
 }
 
-// TODO: check CONFIG to see if DEBUG set to true should halt building process
-pub fn scan_files(project: &Project, build_settings: &BuildSettings) {
-    let globals_file = format!("{1}{0}{2}", std::path::MAIN_SEPARATOR, project.directory, "globals.lua");
-    println!("Looking for globals.lua at: {}", globals_file);
-
-    let mut f = File::open(globals_file).expect("file not found");
-
-    let mut contents = String::new();
-    f.read_to_string(&mut contents)
-        .expect("something went wrong reading the file");
-
-    if (contents.find("RELEASE = false") != None && contents.find("DEBUG = not RELEASE") != None) || contents.find("DEBUG = true") != None {
-        println!("!!!WARNING!!! Debug is ENABLED!");
-        if build_settings.debug_halt {
-            panic!("DEBUG set to false. If you want to build anyway, modify debug_halt in Settings.");
-        }
-    } else if (contents.find("RELEASE = true") != None && contents.find("DEBUG = not RELEASE") != None) || contents.find("DEBUG = false") != None {
-        println!("You can rest easy. Debug is DISABLED.")
-    } else {
-        println!("It is uncertain what DEBUG is set to. Make sure to verify it on your own.")
-    }
+pub fn scan_files(_project: &Project, _build_settings: &BuildSettings) {
+    // @TODO
 }
 
 pub fn build_init(project: &Project, build_settings: &BuildSettings) {
+    // Currently does nothing. This step would be where the build process
+    // would be halted for some reason (dirty files, etc.).
     scan_files(&project, &build_settings);
 
     // Ensure release directory exists.

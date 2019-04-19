@@ -3,7 +3,6 @@ extern crate std;
 use std::str::FromStr;
 
 pub struct BuildSettings<> {
-    pub debug_halt: bool,
     pub ignore_list: Vec<String>,
 }
 

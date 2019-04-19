@@ -49,7 +49,6 @@ fn main() {
     }
 
     let build_settings = BuildSettings {
-        debug_halt: settings.get("build.debug_halt").unwrap(),
         ignore_list: settings.get("build.ignore_list").unwrap()
     };
 
