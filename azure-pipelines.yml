@@ -74,6 +74,7 @@ jobs:
           sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
           contents: |
             boon
+            boon.exe
           targetFolder: '$(Build.BinariesDirectory)/boon'
       - task: ArchiveFiles@2
         displayName: Gather assets
