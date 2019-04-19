@@ -56,18 +56,6 @@ jobs:
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
         condition: ne( variables['Agent.OS'], 'Windows_NT' )
-      - script: |
-          echo $(Build.SourcesDirectory)
-          dir $(Build.SourcesDirectory)
-          echo $(Build.SourcesDirectory)\target
-          dir $(Build.SourcesDirectory)\target
-          echo $(Build.SourcesDirectory)\target\$(TARGET)
-          dir $(Build.SourcesDirectory)\target\$(TARGET)
-          echo $(Build.SourcesDirectory)\target\$(TARGET)\release
-          dir $(Build.SourcesDirectory)\target\$(TARGET)\release
-          echo $(Build.BinariesDirectory)
-          dir $(Build.BinariesDirectory)
-        condition: eq( variables['Agent.OS'], 'Windows_NT' )
       - task: CopyFiles@2
         displayName: Copy assets
         inputs:
@@ -82,7 +70,7 @@ jobs:
           rootFolderOrFile: '$(Build.BinariesDirectory)/boon'
           archiveType: 'tar'
           tarCompression: 'gz'
-          archiveFile: '$(Build.ArtifactStagingDirectory)/boon-latest-$(TARGET).tar.gz' # Hack: replace "latest" with $(build.my_tag)
+          archiveFile: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
       - task: GithubRelease@0
         condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
         inputs:
@@ -91,8 +79,8 @@ jobs:
           action: 'edit'
           target: '$(build.sourceVersion)'
           tagSource: 'manual'
-          tag: 'latest' # Hack: replace "latest" with $(build.my_tag)
-          assets: '$(Build.ArtifactStagingDirectory)/boon-latest-$(TARGET).tar.gz' # Hack: replace "latest" with $(build.my_tag)
-          title: 'latest'
+          tag: '$(build.my_tag)'
+          assets: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
+          title: '$(build.my_tag)'
           assetUploadMode: 'replace'
           addChangeLog: false
