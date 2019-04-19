@@ -385,8 +385,12 @@ pub fn build_macos(project: &Project, _build_settings: &BuildSettings, version: 
 }
 
 fn should_exclude_file(file_name: String, ignore_list: &Vec<String>) -> bool {
-    for exclude_name in ignore_list {
-        if file_name.find(exclude_name) != None {
+    for exclude_pattern in ignore_list {
+        // @Performance @TODO: Could cache regex in a multi-build to
+        // avoid recompiling the same patterns
+        let re = regex::Regex::new(exclude_pattern).unwrap();
+        if re.is_match(file_name.as_str()) {
+            println!("excluding: {} via '{}'", file_name, exclude_pattern);
             return true;
         }
     }

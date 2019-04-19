@@ -9,15 +9,22 @@ uti = "com.company.mygame"
 version = "v1.0"
 
 [build]
-# Which folders and files to exclude when building. (Anything partially containing these too).
+# List of patterns to exclude when building. Each item is a regular
+# expression, which when matched, will exclude the matched file or
+# directory from the build.
 ignore_list = [
-    ".git",
+    # Git
+    "^.git.*",
+
+    # Binary files
+    ".zip$",
+    ".tar.gz$",
+    ".love$",
+    ".exe$",
+
+    # Boon-specific files and directories
+    "Boon.toml",
     "release",
-    "play.bat",
-    ".gitattributes",
-    "screenshots",
-    ".love",
-    ".exe"
 ]
 
 # If this is set to true, then the default ignore list will not be
