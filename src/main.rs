@@ -40,17 +40,28 @@ fn main() {
         }
     }
 
+    let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
+
     if Path::new("Boon.toml").exists() {
         println!("Config exists!");
         // Add in `./Boon.toml`
         settings.merge(config::File::with_name("Boon")).unwrap();
-    } else {
-        println!("Config doesn't exist.");
+
+        let mut project_ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
+
+        if settings.get("build.exclude_default_ignore_list").unwrap() {
+            ignore_list = project_ignore_list;
+        } else {
+            ignore_list.append(&mut project_ignore_list);
+        }
     }
 
     let build_settings = BuildSettings {
-        ignore_list: settings.get("build.ignore_list").unwrap()
+        ignore_list: ignore_list,
+        exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list").unwrap(),
     };
+
+    dbg!(&build_settings);
 
     let targets = &["love", "windows", "macos"];
 

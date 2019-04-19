@@ -2,8 +2,10 @@ extern crate std;
 
 use std::str::FromStr;
 
+#[derive(Debug)]
 pub struct BuildSettings<> {
     pub ignore_list: Vec<String>,
+    pub exclude_default_ignore_list: bool,
 }
 
 pub struct Project {

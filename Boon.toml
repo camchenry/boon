@@ -10,6 +10,11 @@ ignore_list = [
     ".exe"
 ]
 
+# If this is set to true, then the default ignore list will not be
+# merged with the project specific ignore list. This allows the
+# ignore list to be completely overwritten.
+exclude_default_ignore_list = false
+
 [project]
 authors = "Developer Name"
 description = "Your description here."
