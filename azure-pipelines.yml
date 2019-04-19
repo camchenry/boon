@@ -56,6 +56,18 @@ jobs:
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
         condition: ne( variables['Agent.OS'], 'Windows_NT' )
+      - script: |
+          echo $(Build.SourcesDirectory)
+          dir $(Build.SourcesDirectory)
+          echo $(Build.SourcesDirectory)/target
+          dir $(Build.SourcesDirectory)/target
+          echo $(Build.SourcesDirectory)/target/$(TARGET)
+          dir $(Build.SourcesDirectory)/target/$(TARGET)
+          echo $(Build.SourcesDirectory)/target/$(TARGET)/release
+          dir $(Build.SourcesDirectory)/target/$(TARGET)/release
+          echo $(Build.BinariesDirectory)
+          dir $(Build.BinariesDirectory)
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
       - task: CopyFiles@2
         displayName: Copy assets
         inputs:
