@@ -416,7 +416,6 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
             .unwrap();
 
         if path.is_file() && !should_exclude_file(name.to_string(), &ignore_list) {
-            println!("adding {:?} ...", name);
             zip.start_file(name, options)?;
             let mut f = File::open(path)?;
 

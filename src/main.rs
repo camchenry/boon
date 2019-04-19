@@ -68,8 +68,6 @@ fn main() {
         output_directory: settings.get("build.output_directory").unwrap(),
     };
 
-    dbg!(&build_settings);
-
     let targets = &["love", "windows", "macos"];
 
     let default_love_version = "11.2";
