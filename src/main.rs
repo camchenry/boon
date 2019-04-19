@@ -141,16 +141,16 @@ fn main() {
             println!("Building target `{}` from directory `{}`", target.unwrap(), directory.unwrap());
 
             let project = Project {
-                title: settings.get_str("project.title").unwrap_or("My Game".to_owned()),
-                package_name: settings.get_str("project.package_name").unwrap_or("my_game".to_owned()),
+                title: settings.get_str("project.title").unwrap(),
+                package_name: settings.get_str("project.package_name").unwrap(),
                 directory: directory.unwrap().to_string(),
-                uti: settings.get_str("project.uti").unwrap_or("com.company.mygame".to_owned()),
+                uti: settings.get_str("project.uti").unwrap(),
 
-                authors: settings.get_str("project.authors").unwrap_or("Developer Name".to_owned()),
-                description: settings.get_str("project.description").unwrap_or("Your description here.".to_owned()),
-                email: settings.get_str("project.email").unwrap_or("email@example.com".to_owned()),
-                url: settings.get_str("project.url").unwrap_or("http://www.example.com/".to_owned()),
-                version: settings.get_str("version").unwrap_or("v1.0".to_owned()),
+                authors: settings.get_str("project.authors").unwrap(),
+                description: settings.get_str("project.description").unwrap(),
+                email: settings.get_str("project.email").unwrap(),
+                url: settings.get_str("project.url").unwrap(),
+                version: settings.get_str("version").unwrap(),
             };
 
             build::build_init(&project, &build_settings);
