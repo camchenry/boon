@@ -4,7 +4,7 @@ jobs:
       matrix:
         windows-stable:
           imageName: 'vs2017-win2016'
-          target: 'x86_64-pc-windows-gnu'
+          target: 'x86_64-pc-windows-msvc'
           rustup_toolchain: stable
         mac-stable:
           imageName: 'macos-10.13'
@@ -20,22 +20,41 @@ jobs:
 
     steps:
       - template: '_build/install-rust.yml'
-      - script: rustup target add $TARGET
-        displayName: Add rustup target
-      - script: cargo build --release --all --target $TARGET
-        displayName: Build (64-bit)
-      - script: cargo test --release --all --target $TARGET
-        displayName: Test (64-bit)
+      - script: |
+          rustup target add %TARGET%
+          cargo build --release --all --target %TARGET%
+        displayName: "Windows - Build (64-bit)"
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
+      - script: |
+          rustup target add $TARGET
+          cargo build --release --all --target $TARGET
+        displayName: "Build (64-bit)"
+        condition: ne( variables['Agent.OS'], 'Windows_NT' )
+
+      - script: |
+          set MY_TAG="latest"
+          echo %MY_TAG%
+          echo "##vso[task.setvariable variable=build.my_tag]%MY_TAG%"
+        displayName: "Windows - Create tag variable"
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
+      - script: |
+          for /f %%x in ('wmic path win32_localtime get /format:list ^| findstr "="') do set %%x
+          set DATE=%Year%-%Month%-%Day%
+          echo "##vso[task.setvariable variable=build.date]%DATE%"
+        displayName: "Windows - Create date variable"
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
 
       - bash: |
           MY_TAG="latest"
           echo $MY_TAG
           echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
         displayName: "Create tag variable"
+        condition: ne( variables['Agent.OS'], 'Windows_NT' )
       - bash: |
           DATE="$(date +%Y-%m-%d)"
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
+        condition: ne( variables['Agent.OS'], 'Windows_NT' )
       - task: CopyFiles@2
         displayName: Copy assets
         inputs:
