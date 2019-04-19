@@ -17,6 +17,7 @@ mod build;
 use clap::{App, Arg, SubCommand};
 use app_dirs::*;
 use std::path::Path;
+use std::fs::File;
 
 const APP_INFO: AppInfo = AppInfo {
     name: "boon",
@@ -44,7 +45,13 @@ fn main() {
 
     if Path::new("Boon.toml").exists() {
         // Add in `./Boon.toml`
-        settings.merge(config::File::with_name("Boon")).unwrap();
+        match settings.merge(config::File::with_name("Boon")) {
+            Ok(_) => {},
+            Err(e) => {
+                eprintln!("Error reading config file: {}", e);
+                std::process::exit(1);
+            }
+        };
 
         let mut project_ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
 
@@ -97,15 +104,34 @@ fn main() {
              .possible_values(available_love_versions)
             );
 
+    let subcmd_init = SubCommand::with_name("init")
+        .about("Initialize configuration for project");
+
     let app_m = App::new("boon")
         .version("0.1.0")
         .author("Cameron McHenry")
         .about("boon: LÖVE2D build and deploy tool")
+        .subcommand(subcmd_init)
         .subcommand(subcmd_build)
         .subcommand(subcmd_download)
         .get_matches();
 
     match app_m.subcommand() {
+        ("init", Some(_subcmd)) => {
+            if Path::new("Boon.toml").exists() {
+                println!("Project already initialized.");
+            } else {
+                match File::create("Boon.toml") {
+                    Ok(_) => {
+                        std::fs::write("Boon.toml", DEFAULT_CONFIG).expect("Unable to write config file");
+                    },
+                    Err(e) => {
+                        eprintln!("Error while creating configuration file: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+            }
+        },
         ("build", Some(subcmd)) => {
             let directory = subcmd.value_of("DIRECTORY");
             let target = subcmd.value_of("target");
