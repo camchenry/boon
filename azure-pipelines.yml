@@ -56,7 +56,7 @@ jobs:
           tarCompression: 'gz'
           archiveFile: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
       - task: GithubRelease@0
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq($(rustup_toolchain), 'stable'))
+        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
         inputs:
           gitHubConnection: 'camchenry'
           repositoryName: 'camchenry/boon'
