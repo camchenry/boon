@@ -20,20 +20,12 @@ jobs:
 
     steps:
       - template: '_build/install-rust.yml'
-      - script: |
-          set -eou
-          D=$(mktemp -d)
-          git clone https://github.com/rust-embedded/cross.git "$D"
-          cd "$D"
-          curl -O -L "https://gist.githubusercontent.com/nickbabcock/c7bdc8e5974ed9956abf46ffd7dc13ff/raw/e211bc17ea88e505003ad763fac7060b4ac1d8d0/patch"
-          git apply patch
-          cargo install --path .
-          rm -rf "$D"
-        displayName: Install cross
-      - script: cross build --release --all --target $TARGET
-        displayName: Build
-      - script: cross test --release --all --target $TARGET
-        displayName: Test
+      - script: rustup target add $TARGET
+        displayName: Add rustup target
+      - script: cargo build --release --all --target $TARGET
+        displayName: Build (64-bit)
+      - script: cargo test --release --all --target $TARGET
+        displayName: Test (64-bit)
 
       - bash: |
           MY_TAG="latest"
@@ -68,6 +60,6 @@ jobs:
           tagSource: 'manual'
           tag: '$(build.my_tag)'
           assets: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
-          title: '$(build.my_tag) - $(build.date)'
+          title: '$(build.my_tag)'
           assetUploadMode: 'replace'
           addChangeLog: false
