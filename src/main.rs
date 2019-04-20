@@ -18,6 +18,7 @@ use clap::{App, Arg, SubCommand};
 use app_dirs::*;
 use std::path::Path;
 use std::fs::File;
+use walkdir::WalkDir;
 
 const APP_INFO: AppInfo = AppInfo {
     name: "boon",
@@ -94,13 +95,26 @@ fn main() {
              .possible_values(available_love_versions)
             );
 
-    let subcmd_download = SubCommand::with_name("download")
+    let subcmd_love_download = SubCommand::with_name("download")
         .about("Download a version of LÖVE")
         .arg(Arg::with_name("VERSION")
              .required(true)
              .takes_value(true)
              .possible_values(available_love_versions)
             );
+
+    // let subcmd_love_remove = SubCommand::with_name("remove")
+    //     .about("Remove a version of LÖVE")
+    //     .arg(Arg::with_name("VERSION")
+    //          .required(true)
+    //          .takes_value(true)
+    //          .possible_values(available_love_versions)
+    //         );
+
+    let subcmd_love = SubCommand::with_name("love")
+        .about("Manage multiple LÖVE versions")
+        .subcommand(subcmd_love_download);
+
 
     let subcmd_init = SubCommand::with_name("init")
         .about("Initialize configuration for project");
@@ -111,7 +125,7 @@ fn main() {
         .about("boon: LÖVE2D build and deploy tool")
         .subcommand(subcmd_init)
         .subcommand(subcmd_build)
-        .subcommand(subcmd_download)
+        .subcommand(subcmd_love)
         .get_matches();
 
     match app_m.subcommand() {
@@ -185,17 +199,46 @@ fn main() {
                 stats.display();
             }
         },
-        ("download", Some(subcmd)) => {
-            let version: LoveVersion = subcmd.value_of("VERSION")
-                .unwrap()
-                .parse::<LoveVersion>()
-                .unwrap();
+        ("love", Some(subcmd)) => {
+            match subcmd.subcommand() {
+                ("download", Some(love_subcmd)) => {
+                    let version: LoveVersion = love_subcmd.value_of("VERSION")
+                        .unwrap()
+                        .parse::<LoveVersion>()
+                        .unwrap();
 
-            download::download_love(&version, &Platform::Windows, &Bitness::X86);
-            download::download_love(&version, &Platform::Windows, &Bitness::X64);
-            download::download_love(&version, &Platform::MacOs, &Bitness::X64);
+                    download::download_love(&version, &Platform::Windows, &Bitness::X86);
+                    download::download_love(&version, &Platform::Windows, &Bitness::X64);
+                    download::download_love(&version, &Platform::MacOs, &Bitness::X64);
 
-            println!("\nLÖVE {} is now available for building.", version.to_string())
+                    println!("\nLÖVE {} is now available for building.", version.to_string())
+                },
+                _ => {
+                    // List installed versions
+                    let mut installed_versions: Vec<String> = Vec::new();
+                    let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/").unwrap();
+                    let walker = WalkDir::new(output_file_path)
+                        .max_depth(1)
+                        .into_iter();
+                    for entry in walker {
+                        let entry = entry.unwrap();
+                        if entry.depth() == 1 {
+                            let file_name = entry.file_name().to_str().expect("Could not parse file name to str");
+                            let version = file_name.parse::<LoveVersion>();
+
+                            match version {
+                                Ok(version) => installed_versions.push(version.to_string()),
+                                Err(_) => {},
+                            }
+                        }
+                    }
+
+                    println!("Installed versions:");
+                    for version in installed_versions {
+                        println!("* {}", version);
+                    }
+                }
+            }
         },
         _ => {
             println!("No command supplied.");
