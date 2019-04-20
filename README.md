@@ -1,6 +1,6 @@
 # boon
 
-boon is a build and deploy tool for LÖVE. It makes it easy to package your game for multiple platforms, similar to [love-release](https://github.com/MisterDA/love-release). It is a single executable with no other dependecies, so once it's installed, you're ready to go. It can be used across multiple projects and makes automated building a breeze.
+boon is a build and deploy tool for LÖVE. It makes it easy to package your game for multiple platforms, similar to [love-release](https://github.com/MisterDA/love-release). It is a single executable with no other dependecies. It can be used across multiple projects and makes automated building a breeze.
 
 [![Build Status](https://dev.azure.com/cameronamchenry/boon/_apis/build/status/camchenry.boon%20(1)?branchName=master)](https://dev.azure.com/cameronamchenry/boon/_build/latest?definitionId=4&branchName=master)
 
@@ -12,9 +12,11 @@ Licensed under the MIT License.
     * Windows (.exe)
     * macOS (.app)
     * Linux (coming soon)
-* Deploy to multiple destinations (coming soon)
+* Package your game for multiple versions of LÖVE. Supported versions:
+    * 11.x
+    * 0.10.2
 * No external dependencies
-* Easy to install
+* Deploy to multiple destinations (coming soon)
 
 # Getting started
 
