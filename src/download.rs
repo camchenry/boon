@@ -77,7 +77,8 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
             url: "https://bitbucket.org/rude/love/downloads/love-0.10.2-macosx-x64.zip",
         },
         _ => {
-            panic!("Unsupported platform {:?}-{:?} for version {:?}", bitness, platform, version);
+            eprintln!("Unsupported platform {:?}-{:?} for version {:?}", bitness, platform, version);
+            std::process::exit(1);
         }
     };
 
@@ -97,19 +98,22 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
                 match reqwest::get(res.url().as_str()) {
                     Ok(res) => res,
                     Err(why) => {
-                        panic!("Could not fetch '{}': {}", file_info.url, why);
+                        eprintln!("Could not fetch '{}': {}", file_info.url, why);
+                        std::process::exit(1);
                     }
                 }
             }
             Err(why) => {
-                panic!("Could not fetch '{}': {}", file_info.url, why);
+                eprintln!("Could not fetch '{}': {}", file_info.url, why);
+                std::process::exit(1);
             }
         };
 
         let file = match File::create(&output_file_path) {
             Ok(file) => file,
             Err(why) => {
-                panic!("Unable to create file '{}': {}", output_file_path.display(), why);
+                eprintln!("Unable to create file '{}': {}", output_file_path.display(), why);
+                std::process::exit(1);
             }
         };
 
@@ -118,7 +122,8 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         match writer.flush() {
             Ok(_) => {}
             Err(why) => {
-                panic!("Could not write file '{}': {}", output_file_path.display(), why);
+                eprintln!("Could not write file '{}': {}", output_file_path.display(), why);
+                std::process::exit(1);
             }
         }
     }
@@ -128,13 +133,17 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         let file = match File::open(&output_file_path) {
             Ok(file) => file,
             Err(why) => {
-                panic!("Unable to open file '{}': {}", output_file_path.display(), why);
+                eprintln!("Unable to open file '{}': {}", output_file_path.display(), why);
+                std::process::exit(1);
             }
         };
 
         let mut archive = match zip::ZipArchive::new(&file) {
             Ok(archive) => archive,
-            Err(why) => panic!("{}", why),
+            Err(why) => {
+                eprintln!("{}", why);
+                std::process::exit(1);
+            }
         };
 
         for i in 0..archive.len() {

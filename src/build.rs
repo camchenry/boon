@@ -98,7 +98,10 @@ pub fn build_init(project: &Project, build_settings: &BuildSettings) {
 
         match std::fs::create_dir(&release_dir_path) {
             Ok(_) => {},
-            Err(err) => panic!("Could not create release directory: '{}'", err)
+            Err(err) => {
+                 eprintln!("Could not create release directory: '{}'", err);
+                 std::process::exit(1);
+            }
         };
     }
 }
@@ -157,8 +160,8 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     let mut love_exe_path = PathBuf::from(app_dir_path);
     love_exe_path.push("love.exe");
     if !love_exe_path.exists() {
-        println!("\nlove.exe not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_exe_path.display(), version.to_string());
-        panic!();
+        eprintln!("\nlove.exe not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_exe_path.display(), version.to_string());
+        std::process::exit(1);
     }
 
     let exe_file_name = get_output_filename(project, &Platform::Windows, bitness);
@@ -170,14 +173,20 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     if output_path.exists() {
         match std::fs::remove_dir_all(&output_path) {
             Ok(_) => {},
-            Err(err) => panic!("Could not remove directory: '{}'", err)
+            Err(err) => {
+                 eprintln!("Could not remove directory: '{}'", err);
+                 std::process::exit(1);
+            }
         };
     }
 
     // Create temp directory to be zipped and removed later
     match std::fs::create_dir(&output_path) {
         Ok(_) => {},
-        Err(err) => panic!("Could not create build directory: '{}'", err)
+        Err(err) => {
+            eprintln!("Could not create build directory: '{}'", err);
+            std::process::exit(1);
+        }
     };
 
     output_path.push(exe_file_name);
@@ -188,7 +197,8 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     let mut output_file = match File::create(&output_path) {
         Ok(file) => file,
         Err(why) => {
-            panic!("Unable to create file `{}`: {}", output_path.display(), why);
+            eprintln!("Unable to create file `{}`: {}", output_path.display(), why);
+            std::process::exit(1);
         }
     };
 
@@ -216,7 +226,10 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
 
                 match fs_extra::file::copy(&path, &project.get_release_path(build_settings).join(zip_output_file_name).join(local_file_name), &copy_options) {
                     Ok(_) => {},
-                    Err(err) => panic!("{:?}", err)
+                    Err(err) => {
+                        eprintln!("{:?}", err);
+                        std::process::exit(1);
+                    }
                 };
             },
 
@@ -236,17 +249,26 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
         if path.is_file() {
             let mut file = match File::open(path) {
                 Ok(file) => file,
-                Err(why) => panic!("Could not open file: {}", why),
+                Err(why) => {
+                    eprintln!("Could not open file: {}", why);
+                    std::process::exit(1);
+                }
             };
 
             match file.read_to_end(&mut buffer) {
                 Ok(_) => {},
-                Err(why) => panic!("Could not read file: {}", why),
+                Err(why) => {
+                    eprintln!("Could not read file: {}", why);
+                    std::process::exit(1);
+                }
             };
 
             match output_file.write_all(&*buffer) {
                 Ok(_) => {},
-                Err(why) => panic!("Could not write output file: {}", why),
+                Err(why) => {
+                    eprintln!("Could not write output file: {}", why);
+                    std::process::exit(1);
+                }
             };
 
             buffer.clear();
@@ -278,7 +300,10 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     println!("Removing {}", path.display());
     match remove_dir_all(&path) {
         Ok(_) => {},
-        Err(err) => panic!("{:?}", err)
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::process::exit(1);
+        }
     };
 
     BuildStatistics {
@@ -302,8 +327,8 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
 
     let love_path = get_love_version_path(version, &Platform::MacOs, bitness);
     if !love_path.exists() {
-        println!("\nLÖVE not found at '{}'\nYou may need to download LÖVE first: `love-kit download {}`", love_path.display(), version.to_string());
-        panic!();
+        eprintln!("\nLÖVE not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_path.display(), version.to_string());
+        std::process::exit(1);
     }
 
     let output_file_name = get_output_filename(project, &Platform::MacOs, bitness);
@@ -317,7 +342,10 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
     copy_options.overwrite = true;
     match fs_extra::dir::copy(&love_path, &output_path, &copy_options) {
         Ok(_) => {},
-        Err(err) => panic!("{:?}", err)
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::process::exit(1);
+        }
     };
 
     let mut local_love_app_path = PathBuf::from(project.get_release_path(build_settings));
@@ -327,14 +355,20 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
         println!("Removing {}", final_output_path.display());
         match std::fs::remove_dir_all(&final_output_path) {
             Ok(_) => {},
-            Err(err) => panic!("{:?}", err)
+            Err(err) => {
+                 eprintln!("{:?}", err);
+                 std::process::exit(1);
+            }
         };
     }
 
     println!("Renaming LÖVE from {} to {}", local_love_app_path.display(), final_output_path.display());
     match std::fs::rename(&local_love_app_path, &final_output_path) {
         Ok(_) => {},
-        Err(err) => panic!("{:?}", err)
+        Err(err) => {
+             eprintln!("{:?}", err);
+             std::process::exit(1);
+        }
     };
 
     let love_file_name = get_love_file_name(&project);
@@ -350,7 +384,10 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
     copy_options.overwrite = true;
     match fs_extra::file::copy(local_love_file_path, resources_path, &copy_options) {
         Ok(_) => {},
-        Err(err) => panic!("{:?}", err)
+        Err(err) => {
+             eprintln!("{:?}", err);
+             std::process::exit(1);
+        }
     };
 
     // Rewrite plist file
@@ -365,12 +402,18 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
         .read(true)
         .open(&plist_path) {
         Ok(file) => file,
-        Err(why) => panic!("Could not open file: {}", why),
+        Err(why) => {
+             eprintln!("Could not open file: {}", why);
+             std::process::exit(1);
+        }
     };
 
     match file.read_to_string(&mut buffer) {
         Ok(_) => {},
-        Err(why) => panic!("Could not read file: {}", why),
+        Err(why) => {
+             eprintln!("Could not read file: {}", why);
+             std::process::exit(1);
+        }
     };
 
     let re = regex::Regex::new("(CFBundleIdentifier.*\n\t<string>)(.*)(</string>)").unwrap();
@@ -394,12 +437,18 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
         .truncate(true)
         .open(&plist_path) {
         Ok(file) => file,
-        Err(why) => panic!("Could not open file: {}", why),
+        Err(why) => {
+             eprintln!("Could not open file: {}", why);
+             std::process::exit(1);
+        }
     };
 
     match file.write_all(buffer.as_bytes()) {
         Ok(_) => {},
-        Err(why) => panic!("Could not write output file: {}", why),
+        Err(why) => {
+             eprintln!("Could not write output file: {}", why);
+             std::process::exit(1);
+        }
     };
 
     BuildStatistics {
