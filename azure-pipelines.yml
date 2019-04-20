@@ -38,31 +38,6 @@ jobs:
         displayName: "Build (64-bit)"
         condition: ne( variables['Agent.OS'], 'Windows_NT' )
 
-      - script: |
-          set MY_TAG=$(Build.SourceBranchName)
-          echo %MY_TAG%
-          echo "##vso[task.setvariable variable=build.my_tag]%MY_TAG%"
-        displayName: "Windows - Create tag variable"
-        condition: eq( variables['Agent.OS'], 'Windows_NT' )
-      - script: |
-          for /f %%x in ('wmic path win32_localtime get /format:list ^| findstr "="') do set %%x
-          set DATE=%Year%-%Month%-%Day%
-          echo %DATE%
-          echo "##vso[task.setvariable variable=build.date]%DATE%"
-        displayName: "Windows - Create date variable"
-        condition: eq( variables['Agent.OS'], 'Windows_NT' )
-
-      - bash: |
-          MY_TAG="$(Build.SourceBranchName)"
-          echo $MY_TAG
-          echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
-        displayName: "Create tag variable"
-        condition: ne( variables['Agent.OS'], 'Windows_NT' )
-      - bash: |
-          DATE="$(date +%Y-%m-%d)"
-          echo "##vso[task.setvariable variable=build.date]$DATE"
-        displayName: "Create date variable"
-        condition: ne( variables['Agent.OS'], 'Windows_NT' )
       - task: CopyFiles@2
         displayName: Copy assets
         inputs:
@@ -77,7 +52,7 @@ jobs:
           rootFolderOrFile: '$(Build.BinariesDirectory)/boon'
           archiveType: 'tar'
           tarCompression: 'gz'
-          archiveFile: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
+          archiveFile: '$(Build.ArtifactStagingDirectory)/boon-$(Build.SourceBranchName)-$(TARGET).tar.gz'
       - task: GithubRelease@0
         condition: succeeded()
         inputs:
@@ -86,8 +61,8 @@ jobs:
           action: 'edit'
           target: '$(build.sourceVersion)'
           tagSource: 'manual'
-          tag: '$(build.my_tag)'
-          assets: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
-          title: '$(build.my_tag)'
+          tag: '$(Build.SourceBranchName)'
+          assets: '$(Build.ArtifactStagingDirectory)/boon-$(Build.SourceBranchName)-$(TARGET).tar.gz'
+          title: '$(Build.SourceBranchName)'
           assetUploadMode: 'replace'
           addChangeLog: false
