@@ -73,8 +73,8 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         },
         (&LoveVersion::V0_10_2, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo{
             version, platform, bitness,
-            filename: "love-0.10.2-macos.zip",
-            url: "https://bitbucket.org/rude/love/downloads/love-0.10.2-macos.zip",
+            filename: "love-0.10.2-macosx-x64.zip",
+            url: "https://bitbucket.org/rude/love/downloads/love-0.10.2-macosx-x64.zip",
         },
         _ => {
             panic!("Unsupported platform {:?}-{:?} for version {:?}", bitness, platform, version);
