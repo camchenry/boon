@@ -150,7 +150,7 @@ fn main() {
                 description: settings.get_str("project.description").unwrap(),
                 email: settings.get_str("project.email").unwrap(),
                 url: settings.get_str("project.url").unwrap(),
-                version: settings.get_str("version").unwrap(),
+                version: settings.get_str("project.version").unwrap(),
             };
 
             build::build_init(&project, &build_settings);
