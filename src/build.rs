@@ -30,12 +30,12 @@ static mut IS_LOVE_BUILT: bool = false;
 /// Get the folder name of where a version of LÖVE is stored in the app cache
 pub fn get_love_version_file_name(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> String {
     match (version, platform, bitness) {
-        (&LoveVersion::V11_2,   &Platform::Windows, &Bitness::X64) => "love-11.2-win64",
-        (&LoveVersion::V11_2,   &Platform::Windows, &Bitness::X86) => "love-11.2-win32",
+        (&LoveVersion::V11_2,   &Platform::Windows, &Bitness::X64) => "love-11.2.0-win64",
+        (&LoveVersion::V11_2,   &Platform::Windows, &Bitness::X86) => "love-11.2.0-win32",
         (&LoveVersion::V11_2,   &Platform::MacOs,   _)             => "love.app",
 
-        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X64) => "love-11.1-win64",
-        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X86) => "love-11.1-win32",
+        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X64) => "love-11.1.0-win64",
+        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X86) => "love-11.1.0-win32",
         (&LoveVersion::V11_1,   &Platform::MacOs,   _)             => "love.app",
 
         (&LoveVersion::V11_0,   &Platform::Windows, &Bitness::X64) => "love-11.0.0-win64",
@@ -106,7 +106,10 @@ pub fn build_init(project: &Project, build_settings: &BuildSettings) {
 //
 // LÖVE .love build
 //
-pub fn build_love(project: &Project, build_settings: &BuildSettings) {
+pub fn build_love(project: &Project, build_settings: &BuildSettings) -> BuildStatistics {
+    // Stats
+    let start = std::time::Instant::now();
+
     let method = zip::CompressionMethod::Deflated;
 
     let src_dir = &project.directory;
@@ -126,17 +129,25 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) {
     unsafe {
         IS_LOVE_BUILT = true;
     }
+
+    BuildStatistics {
+        build_name: String::from("LÖVE"),
+        build_time: start.elapsed(),
+    }
 }
 
 //
 // Windows .exe build
 //
-pub fn build_windows(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
+pub fn build_windows(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) -> BuildStatistics {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for windows because .love not built.");
         }
     }
+
+    // Stats
+    let start = std::time::Instant::now();
 
     let app_dir_path = get_love_version_path(version, &Platform::Windows, bitness);
 
@@ -269,17 +280,25 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
         Ok(_) => {},
         Err(err) => panic!("{:?}", err)
     };
+
+    BuildStatistics {
+        build_name: String::from(format!("Windows {}", bitness.to_string())),
+        build_time: start.elapsed(),
+    }
 }
 
 //
 // macOS .app build
 //
-pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) {
+pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) -> BuildStatistics {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for macOS because .love not built.");
         }
     }
+
+    // Stats
+    let start = std::time::Instant::now();
 
     let love_path = get_love_version_path(version, &Platform::MacOs, bitness);
     if !love_path.exists() {
@@ -382,6 +401,11 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
         Ok(_) => {},
         Err(why) => panic!("Could not write output file: {}", why),
     };
+
+    BuildStatistics {
+        build_name: String::from(format!("macOS {}", bitness.to_string())),
+        build_time: start.elapsed(),
+    }
 }
 
 fn should_exclude_file(file_name: String, ignore_list: &Vec<String>) -> bool {
@@ -450,5 +474,11 @@ impl Project {
             .unwrap();
         path.push(build_settings.output_directory.as_str());
         path
+    }
+}
+
+impl BuildStatistics {
+    pub fn display(&self) {
+        println!("Built '{}' in {:?}", self.build_name, self.build_time);
     }
 }

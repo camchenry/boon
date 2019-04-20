@@ -155,20 +155,34 @@ fn main() {
 
             build::build_init(&project, &build_settings);
 
+            let mut stats_list = Vec::new();
+
             match target {
                 Some("love") => {
-                    build::build_love(&project, &build_settings)
+                    let stats = build::build_love(&project, &build_settings);
+                    stats_list.push(stats);
                 }
                 Some("windows") => {
-                    build::build_love(&project, &build_settings);
-                    build::build_windows(&project, &build_settings, &version, &Bitness::X86);
-                    build::build_windows(&project, &build_settings, &version, &Bitness::X64);
+                    let stats = build::build_love(&project, &build_settings);
+                    stats_list.push(stats);
+                    let stats = build::build_windows(&project, &build_settings, &version, &Bitness::X86);
+                    stats_list.push(stats);
+                    let stats = build::build_windows(&project, &build_settings, &version, &Bitness::X64);
+                    stats_list.push(stats);
                 }
                 Some("macos") => {
-                    build::build_love(&project, &build_settings);
-                    build::build_macos(&project, &build_settings, &version, &Bitness::X64);
+                    let stats = build::build_love(&project, &build_settings);
+                    stats_list.push(stats);
+                    let stats = build::build_macos(&project, &build_settings, &version, &Bitness::X64);
+                    stats_list.push(stats);
                 }
                 _ => {}
+            }
+
+            // Display build report
+            println!();
+            for stats in stats_list {
+                stats.display();
             }
         },
         ("download", Some(subcmd)) => {

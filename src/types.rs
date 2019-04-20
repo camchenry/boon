@@ -54,6 +54,11 @@ pub struct LoveVersionFileInfo<'a> {
     pub url: &'a str,
 }
 
+pub struct BuildStatistics {
+    pub build_name: String,
+    pub build_time: std::time::Duration,
+}
+
 impl FromStr for LoveVersion {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err>{
@@ -77,6 +82,17 @@ impl ToString for LoveVersion {
             &V11_1 => "11.1",
             &V11_0 => "11.0",
             &V0_10_2 => "0.10.2",
+        }.to_string()
+    }
+}
+
+impl ToString for Bitness {
+    fn to_string(&self) -> String {
+        use crate::types::Bitness::*;
+
+        match self {
+            &X86 => "x86",
+            &X64 => "x64",
         }.to_string()
     }
 }
