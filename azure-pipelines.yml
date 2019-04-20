@@ -1,3 +1,10 @@
+trigger:
+  branches:
+    include:
+      - master
+  tags:
+    include:
+      - '*'
 jobs:
   - job: 'Build'
     strategy:
@@ -72,7 +79,7 @@ jobs:
           tarCompression: 'gz'
           archiveFile: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
       - task: GithubRelease@0
-        condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'master'))
+        condition: and(succeeded())
         inputs:
           gitHubConnection: 'camchenry'
           repositoryName: 'camchenry/boon'
