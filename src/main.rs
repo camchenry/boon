@@ -121,6 +121,9 @@ fn main() {
     let subcmd_init = SubCommand::with_name("init")
         .about("Initialize configuration for project");
 
+    let subcmd_clean = SubCommand::with_name("clean")
+        .about("Remove built packages");
+
     let app_m = App::new("boon")
         .version("0.1.0")
         .author("Cameron McHenry")
@@ -128,6 +131,7 @@ fn main() {
         .subcommand(subcmd_init)
         .subcommand(subcmd_build)
         .subcommand(subcmd_love)
+        .subcommand(subcmd_clean)
         .get_matches();
 
     match app_m.subcommand() {
@@ -252,6 +256,29 @@ fn main() {
                 }
             }
         },
+        ("clean", Some(_subcmd)) => {
+            // @TODO: Get top-level directory from git?
+            let directory = ".";
+            let mut release_dir_path = Path::new(directory)
+                .canonicalize()
+                .unwrap();
+            release_dir_path.push(build_settings.output_directory.as_str());
+
+            if release_dir_path.exists() {
+                println!("Cleaning {}", release_dir_path.display());
+
+                match remove_dir_all(&release_dir_path) {
+                    Ok(_) => {
+                        println!("");
+                    },
+                    Err(err) => {
+                        eprintln!("Could not clean {}: {}", release_dir_path.display(), err);
+                    }
+                };
+            }
+
+            println!("Release directory cleaned.");
+        }
         _ => {
             println!("No command supplied.");
             println!("{}", app_m.usage());
