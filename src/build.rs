@@ -390,7 +390,6 @@ fn should_exclude_file(file_name: String, ignore_list: &Vec<String>) -> bool {
         // avoid recompiling the same patterns
         let re = regex::Regex::new(exclude_pattern).unwrap();
         if re.is_match(file_name.as_str()) {
-            println!("excluding: {} via '{}'", file_name, exclude_pattern);
             return true;
         }
     }
