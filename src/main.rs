@@ -16,9 +16,10 @@ mod build;
 
 use clap::{App, Arg, SubCommand};
 use app_dirs::*;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs::File;
 use walkdir::WalkDir;
+use remove_dir_all::*;
 
 const APP_INFO: AppInfo = AppInfo {
     name: "boon",
@@ -103,17 +104,18 @@ fn main() {
              .possible_values(available_love_versions)
             );
 
-    // let subcmd_love_remove = SubCommand::with_name("remove")
-    //     .about("Remove a version of LÖVE")
-    //     .arg(Arg::with_name("VERSION")
-    //          .required(true)
-    //          .takes_value(true)
-    //          .possible_values(available_love_versions)
-    //         );
+    let subcmd_love_remove = SubCommand::with_name("remove")
+        .about("Remove a version of LÖVE")
+        .arg(Arg::with_name("VERSION")
+             .required(true)
+             .takes_value(true)
+             .possible_values(available_love_versions)
+            );
 
     let subcmd_love = SubCommand::with_name("love")
         .about("Manage multiple LÖVE versions")
-        .subcommand(subcmd_love_download);
+        .subcommand(subcmd_love_download)
+        .subcommand(subcmd_love_remove);
 
 
     let subcmd_init = SubCommand::with_name("init")
@@ -213,25 +215,35 @@ fn main() {
 
                     println!("\nLÖVE {} is now available for building.", version.to_string())
                 },
+                ("remove", Some(love_subcmd)) => {
+                    let version = love_subcmd.value_of("VERSION")
+                        .unwrap()
+                        .parse::<LoveVersion>()
+                        .unwrap()
+                        .to_string();
+
+                    let installed_versions = get_installed_love_versions();
+
+                    if installed_versions.contains(&version) {
+                        let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/").unwrap();
+                        let path = PathBuf::new()
+                            .join(output_file_path)
+                            .join(&version);
+                        match remove_dir_all(&path) {
+                            Ok(_) => {
+                                println!("Removed LÖVE version {}.", version);
+                            },
+                            Err(err) => {
+                                eprintln!("Could not remove {}: {}", path.display(), err);
+                            }
+                        };
+                    } else {
+                        println!("Version '{}' not installed", version);
+                    }
+                },
                 _ => {
                     // List installed versions
-                    let mut installed_versions: Vec<String> = Vec::new();
-                    let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/").unwrap();
-                    let walker = WalkDir::new(output_file_path)
-                        .max_depth(1)
-                        .into_iter();
-                    for entry in walker {
-                        let entry = entry.unwrap();
-                        if entry.depth() == 1 {
-                            let file_name = entry.file_name().to_str().expect("Could not parse file name to str");
-                            let version = file_name.parse::<LoveVersion>();
-
-                            match version {
-                                Ok(version) => installed_versions.push(version.to_string()),
-                                Err(_) => {},
-                            }
-                        }
-                    }
+                    let installed_versions = get_installed_love_versions();
 
                     println!("Installed versions:");
                     for version in installed_versions {
@@ -245,4 +257,28 @@ fn main() {
             println!("{}", app_m.usage());
         },
     }
+}
+
+fn get_installed_love_versions() -> Vec<String> {
+    let mut installed_versions: Vec<String> = Vec::new();
+    let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/").unwrap();
+    let walker = WalkDir::new(output_file_path)
+        .max_depth(1)
+        .into_iter();
+    for entry in walker {
+        let entry = entry.unwrap();
+        if entry.depth() == 1 {
+            let file_name = entry.file_name().to_str().expect("Could not parse file name to str");
+
+            // Exclude directories that do not parse to a love
+            // version, just in case some bogus directories
+            // got in there somehow.
+            match file_name.parse::<LoveVersion>() {
+                Ok(version) => installed_versions.push(version.to_string()),
+                Err(_) => {},
+            }
+        }
+    }
+
+    installed_versions
 }
