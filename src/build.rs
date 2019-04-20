@@ -81,8 +81,14 @@ pub fn get_love_version_path(version: &LoveVersion, platform: &Platform, bitness
     get_app_dir(AppDataType::UserData, &APP_INFO, &subdirectory).unwrap()
 }
 
-pub fn scan_files(_project: &Project, _build_settings: &BuildSettings) {
-    // @TODO
+pub fn scan_files(project: &Project, _build_settings: &BuildSettings) {
+    // Check for main.lua in directory root
+    let main_lua_file = PathBuf::new().join(&project.directory).join("main.lua");
+
+    if !main_lua_file.exists() {
+        eprintln!("Could not find main.lua in project root.");
+        std::process::exit(1);
+    }
 }
 
 pub fn build_init(project: &Project, build_settings: &BuildSettings) {
