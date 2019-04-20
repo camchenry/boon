@@ -24,11 +24,11 @@ Licensed under the MIT License.
 
 boon has prebuilt binaries on the GitHub Releases page. Download the zip file, then extract the executable onto your PATH.
 
-If you're a **Windows** user, download the `x86_64-pc-windows-msvc` zip file.
+If you're a **Windows** user, download the `x86_64-pc-windows-msvc` file.
 
-If you're a **macOS** user, download the `x86_64-apple-darwin` zip file.
+If you're a **macOS** user, download the `x86_64-apple-darwin` file.
 
-If you're a **Linux** user, download the `x86_64-unknown-linux-gnu` zip file.
+If you're a **Linux** user, download the `x86_64-unknown-linux-gnu` file.
 
 ## Usage
 
@@ -47,7 +47,7 @@ In order to build your project, you first need to download the versionof LÖVE t
 
 ```bash
 # Will download LÖVE 11.2 for building
-$ boon download 11.2
+$ boon love download 11.2
 ```
 
 ### Building your project

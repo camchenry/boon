@@ -157,7 +157,7 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     let mut love_exe_path = PathBuf::from(app_dir_path);
     love_exe_path.push("love.exe");
     if !love_exe_path.exists() {
-        println!("\nlove.exe not found at '{}'\nYou may need to download LÖVE first: `boon download {}`", love_exe_path.display(), version.to_string());
+        println!("\nlove.exe not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_exe_path.display(), version.to_string());
         panic!();
     }
 
