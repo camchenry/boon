@@ -70,7 +70,7 @@ jobs:
           rootFolderOrFile: '$(Build.BinariesDirectory)/boon'
           archiveType: 'tar'
           tarCompression: 'gz'
-          archiveFile: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
+          archiveFile: '$(Build.ArtifactStagingDirectory)/boon-latest-$(TARGET).tar.gz' # replace latest with my_tag
       - task: GithubRelease@0
         condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
         inputs:
@@ -80,7 +80,7 @@ jobs:
           target: '$(build.sourceVersion)'
           tagSource: 'manual'
           tag: '$(build.my_tag)'
-          assets: '$(Build.ArtifactStagingDirectory)/boon-$(build.my_tag)-$(TARGET).tar.gz'
+          assets: '$(Build.ArtifactStagingDirectory)/boon-latest-$(TARGET).tar.gz'
           title: '$(build.my_tag)'
           assetUploadMode: 'replace'
           addChangeLog: false
