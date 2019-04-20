@@ -79,8 +79,8 @@ jobs:
           action: 'edit'
           target: '$(build.sourceVersion)'
           tagSource: 'manual'
-          tag: '$(build.my_tag)'
-          assets: '$(Build.ArtifactStagingDirectory)/boon-latest-$(TARGET).tar.gz'
-          title: '$(build.my_tag)'
+          tag: 'latest'  # replace latest with my_tag
+          assets: '$(Build.ArtifactStagingDirectory)/boon-latest-$(TARGET).tar.gz'  # replace latest with my_tag
+          title: 'latest'  # replace latest with my_tag
           assetUploadMode: 'replace'
           addChangeLog: false
