@@ -383,7 +383,7 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
     let mut resources_path = PathBuf::from(&final_output_path);
     resources_path.push("Contents");
     resources_path.push("Resources");
-    resources_path.push("love_file_name");
+    resources_path.push(get_love_file_name(&project));
     println!("Copying .love file from {} to {}", local_love_file_path.display(), resources_path.display());
 
     let mut copy_options = fs_extra::file::CopyOptions::new();
