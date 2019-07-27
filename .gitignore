@@ -5,3 +5,4 @@ love/*
 *.love
 *.app
 *.zip
+.idea
