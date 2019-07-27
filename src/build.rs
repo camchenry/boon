@@ -488,13 +488,10 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
     let mut buffer = Vec::new();
     for entry in it {
         let path = entry.path();
-        let name = path.strip_prefix(Path::new(prefix))
-            .unwrap()
-            .to_str()
-            .unwrap();
+        let name = path.strip_prefix(Path::new(prefix)).unwrap();
 
-        if path.is_file() && !should_exclude_file(name.to_string(), &ignore_list) {
-            zip.start_file(name, options)?;
+        if path.is_file() && !should_exclude_file(name.to_str().unwrap().to_string(), &ignore_list) {
+            zip.start_file_from_path(name, options)?;
             let mut f = File::open(path)?;
 
             f.read_to_end(&mut buffer)?;
