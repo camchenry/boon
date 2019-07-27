@@ -191,30 +191,42 @@ fn main() {
                     .expect("Could not get project version"),
             };
 
-            build::build_init(&project, &build_settings);
+            build::init(&project, &build_settings);
 
             let mut stats_list = Vec::new();
 
             match target {
                 "love" => {
-                    let stats = build::build_love(&project, &build_settings);
+                    let stats = build::create_love(&project, &build_settings);
                     stats_list.push(stats);
                 }
                 "windows" => {
-                    let stats = build::build_love(&project, &build_settings);
+                    let stats = build::create_love(&project, &build_settings);
                     stats_list.push(stats);
-                    let stats =
-                        build::build_windows(&project, &build_settings, &version, &Bitness::X86);
+                    let stats = build::windows::create_exe(
+                        &project,
+                        &build_settings,
+                        &version,
+                        &Bitness::X86,
+                    );
                     stats_list.push(stats);
-                    let stats =
-                        build::build_windows(&project, &build_settings, &version, &Bitness::X64);
+                    let stats = build::windows::create_exe(
+                        &project,
+                        &build_settings,
+                        &version,
+                        &Bitness::X64,
+                    );
                     stats_list.push(stats);
                 }
                 "macos" => {
-                    let stats = build::build_love(&project, &build_settings);
+                    let stats = build::create_love(&project, &build_settings);
                     stats_list.push(stats);
-                    let stats =
-                        build::build_macos(&project, &build_settings, &version, &Bitness::X64);
+                    let stats = build::macos::create_app(
+                        &project,
+                        &build_settings,
+                        &version,
+                        &Bitness::X64,
+                    );
                     stats_list.push(stats);
                 }
                 _ => {}
