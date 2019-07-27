@@ -1,13 +1,3 @@
-extern crate clap;
-extern crate app_dirs;
-extern crate walkdir;
-extern crate zip;
-extern crate reqwest;
-extern crate config;
-extern crate regex;
-extern crate remove_dir_all;
-extern crate glob;
-
 mod types;
 use crate::types::*;
 

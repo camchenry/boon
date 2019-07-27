@@ -1,5 +1,3 @@
-extern crate std;
-
 use std::str::FromStr;
 
 #[derive(Debug)]

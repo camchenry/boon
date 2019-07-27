@@ -1,11 +1,3 @@
-extern crate std;
-extern crate zip;
-extern crate config;
-extern crate fs_extra;
-extern crate regex;
-extern crate remove_dir_all;
-extern crate glob;
-
 use crate::types::*;
 
 use crate::APP_INFO;

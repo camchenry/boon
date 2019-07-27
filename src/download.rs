@@ -1,5 +1,3 @@
-extern crate zip;
-extern crate std;
 use crate::types::*;
 
 use app_dirs::*;
