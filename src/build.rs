@@ -4,40 +4,45 @@ use crate::APP_INFO;
 use app_dirs::*;
 
 use std::io::prelude::*;
+use std::io::{Seek, Write};
 use std::iter::Iterator;
-use std::io::{Write, Seek};
 
-use std::path::{Path, PathBuf};
 use std::fs::File;
+use std::path::{Path, PathBuf};
 
+use remove_dir_all::*;
+use walkdir::{DirEntry, WalkDir};
 use zip::result::ZipError;
 use zip::write::FileOptions;
-use walkdir::{WalkDir, DirEntry};
-use remove_dir_all::*;
 
 use glob::glob;
 
 static mut IS_LOVE_BUILT: bool = false;
 
 /// Get the folder name of where a version of LÖVE is stored in the app cache
-pub fn get_love_version_file_name(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> String {
+pub fn get_love_version_file_name(
+    version: &LoveVersion,
+    platform: &Platform,
+    bitness: &Bitness,
+) -> String {
     match (version, platform, bitness) {
-        (&LoveVersion::V11_2,   &Platform::Windows, &Bitness::X64) => "love-11.2.0-win64",
-        (&LoveVersion::V11_2,   &Platform::Windows, &Bitness::X86) => "love-11.2.0-win32",
-        (&LoveVersion::V11_2,   &Platform::MacOs,   _)             => "love.app",
+        (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X64) => "love-11.2.0-win64",
+        (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X86) => "love-11.2.0-win32",
+        (&LoveVersion::V11_2, &Platform::MacOs, _) => "love.app",
 
-        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X64) => "love-11.1.0-win64",
-        (&LoveVersion::V11_1,   &Platform::Windows, &Bitness::X86) => "love-11.1.0-win32",
-        (&LoveVersion::V11_1,   &Platform::MacOs,   _)             => "love.app",
+        (&LoveVersion::V11_1, &Platform::Windows, &Bitness::X64) => "love-11.1.0-win64",
+        (&LoveVersion::V11_1, &Platform::Windows, &Bitness::X86) => "love-11.1.0-win32",
+        (&LoveVersion::V11_1, &Platform::MacOs, _) => "love.app",
 
-        (&LoveVersion::V11_0,   &Platform::Windows, &Bitness::X64) => "love-11.0.0-win64",
-        (&LoveVersion::V11_0,   &Platform::Windows, &Bitness::X86) => "love-11.0.0-win32",
-        (&LoveVersion::V11_0,   &Platform::MacOs,   _)             => "love.app",
+        (&LoveVersion::V11_0, &Platform::Windows, &Bitness::X64) => "love-11.0.0-win64",
+        (&LoveVersion::V11_0, &Platform::Windows, &Bitness::X86) => "love-11.0.0-win32",
+        (&LoveVersion::V11_0, &Platform::MacOs, _) => "love.app",
 
         (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X64) => "love-0.10.2-win64",
         (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X86) => "love-0.10.2-win32",
-        (&LoveVersion::V0_10_2, &Platform::MacOs,   _)             => "love.app",
-    }.to_owned()
+        (&LoveVersion::V0_10_2, &Platform::MacOs, _) => "love.app",
+    }
+    .to_owned()
 }
 
 /// Get file name of the .love file (same for all platforms)
@@ -50,21 +55,29 @@ pub fn get_output_filename(project: &Project, platform: &Platform, bitness: &Bit
     match (platform, bitness) {
         (&Platform::Windows, &Bitness::X64) => format!("{}.exe", project.package_name),
         (&Platform::Windows, &Bitness::X86) => format!("{}.exe", project.package_name),
-        (&Platform::MacOs,   _) =>             format!("{}.app", project.title),
+        (&Platform::MacOs, _) => format!("{}.app", project.title),
     }
 }
 
 /// Get file name of the distributed .zip file based on platform and bitness
-pub fn get_zip_output_filename(project: &Project, platform: &Platform, bitness: &Bitness) -> String {
+pub fn get_zip_output_filename(
+    project: &Project,
+    platform: &Platform,
+    bitness: &Bitness,
+) -> String {
     match (platform, bitness) {
         (&Platform::Windows, &Bitness::X64) => format!("{}-win64", project.title),
         (&Platform::Windows, &Bitness::X86) => format!("{}-win32", project.title),
-        (&Platform::MacOs,   _) =>             format!("{}-macos", project.title),
+        (&Platform::MacOs, _) => format!("{}-macos", project.title),
     }
 }
 
 /// Get a platform-specific path to the app cache directory where LÖVE is stored.
-pub fn get_love_version_path(version: &LoveVersion, platform: &Platform, bitness: &Bitness) -> PathBuf {
+pub fn get_love_version_path(
+    version: &LoveVersion,
+    platform: &Platform,
+    bitness: &Bitness,
+) -> PathBuf {
     let filename = get_love_version_file_name(version, platform, bitness);
 
     // @DoNotFix: The forward slash here is intentional. It will get escaped by
@@ -95,10 +108,10 @@ pub fn build_init(project: &Project, build_settings: &BuildSettings) {
         println!("Creating release directory {}", release_dir_path.display());
 
         match std::fs::create_dir(&release_dir_path) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(err) => {
-                 eprintln!("Could not create release directory: '{}'", err);
-                 std::process::exit(1);
+                eprintln!("Could not create release directory: '{}'", err);
+                std::process::exit(1);
             }
         };
     }
@@ -114,14 +127,16 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) -> BuildSta
     let method = zip::CompressionMethod::Deflated;
 
     let src_dir = &project.directory;
-    let love_path = project.get_release_path(build_settings).join(get_love_file_name(&project));
+    let love_path = project
+        .get_release_path(build_settings)
+        .join(get_love_file_name(&project));
     let dst_file = love_path.to_str().unwrap();
     println!("Outputting LÖVE as {}", dst_file);
 
     match collect_zip_directory(src_dir, dst_file, method, &build_settings.ignore_list) {
         Ok(_) => {
             println!("done: {} written to {}", src_dir, dst_file);
-        },
+        }
         Err(e) => {
             println!("Error: {:?}", e);
         }
@@ -140,7 +155,12 @@ pub fn build_love(project: &Project, build_settings: &BuildSettings) -> BuildSta
 //
 // Windows .exe build
 //
-pub fn build_windows(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) -> BuildStatistics {
+pub fn build_windows(
+    project: &Project,
+    build_settings: &BuildSettings,
+    version: &LoveVersion,
+    bitness: &Bitness,
+) -> BuildStatistics {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for windows because .love not built.");
@@ -170,17 +190,17 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     println!("Removing existing directory {}", output_path.display());
     if output_path.exists() {
         match std::fs::remove_dir_all(&output_path) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(err) => {
-                 eprintln!("Could not remove directory: '{}'", err);
-                 std::process::exit(1);
+                eprintln!("Could not remove directory: '{}'", err);
+                std::process::exit(1);
             }
         };
     }
 
     // Create temp directory to be zipped and removed later
     match std::fs::create_dir(&output_path) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(err) => {
             eprintln!("Could not create build directory: '{}'", err);
             std::process::exit(1);
@@ -204,7 +224,10 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     let mut local_love_file_path = PathBuf::from(project.get_release_path(build_settings));
     local_love_file_path.push(love_file_name);
 
-    println!("Copying project .love from {}", local_love_file_path.display());
+    println!(
+        "Copying project .love from {}",
+        local_love_file_path.display()
+    );
 
     let mut copy_options = fs_extra::file::CopyOptions::new();
     copy_options.overwrite = true;
@@ -213,23 +236,32 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     let search_for_files_dll = app_dir_path_clone.join("*.dll");
     let search_for_files_txt = app_dir_path_clone.join("*.txt");
     let search_for_files_ico = app_dir_path_clone.join("*.ico");
-    for entry in glob(search_for_files_dll.to_str().unwrap()).unwrap().chain(
-                 glob(search_for_files_txt.to_str().unwrap()).unwrap()).chain(
-                 glob(search_for_files_ico.to_str().unwrap()).unwrap()) {
+    for entry in glob(search_for_files_dll.to_str().unwrap())
+        .unwrap()
+        .chain(glob(search_for_files_txt.to_str().unwrap()).unwrap())
+        .chain(glob(search_for_files_ico.to_str().unwrap()).unwrap())
+    {
         match entry {
             Ok(path) => {
                 let local_file_name = path.file_name().unwrap().to_str().unwrap();
                 //println!("Local file name: {}", local_file_name);
                 //println!("copying {:?} to {}", path.display(), project.get_release_path().join(zip_output_file_name).join(local_file_name).display());
 
-                match fs_extra::file::copy(&path, &project.get_release_path(build_settings).join(zip_output_file_name).join(local_file_name), &copy_options) {
-                    Ok(_) => {},
+                match fs_extra::file::copy(
+                    &path,
+                    &project
+                        .get_release_path(build_settings)
+                        .join(zip_output_file_name)
+                        .join(local_file_name),
+                    &copy_options,
+                ) {
+                    Ok(_) => {}
                     Err(err) => {
                         eprintln!("{:?}", err);
                         std::process::exit(1);
                     }
                 };
-            },
+            }
 
             // if the path matched but was unreadable,
             // thereby preventing its contents from matching
@@ -237,10 +269,7 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
         }
     }
 
-    let paths = &[
-        love_exe_path.as_path(),
-        local_love_file_path.as_path(),
-    ];
+    let paths = &[love_exe_path.as_path(), local_love_file_path.as_path()];
 
     let mut buffer = Vec::new();
     for path in paths {
@@ -254,7 +283,7 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
             };
 
             match file.read_to_end(&mut buffer) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(why) => {
                     eprintln!("Could not read file: {}", why);
                     std::process::exit(1);
@@ -262,7 +291,7 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
             };
 
             match output_file.write_all(&*buffer) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(why) => {
                     eprintln!("Could not write output file: {}", why);
                     std::process::exit(1);
@@ -275,7 +304,9 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
 
     // Time to zip up the whole directory
     let zip_output_file_name = get_zip_output_filename(project, &Platform::Windows, bitness);
-    let output_path = project.get_release_path(build_settings).join(zip_output_file_name);
+    let output_path = project
+        .get_release_path(build_settings)
+        .join(zip_output_file_name);
 
     let src_dir = output_path.clone();
     let src_dir = src_dir.to_str().unwrap();
@@ -285,11 +316,11 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     let dst_file = dst_file.to_str().unwrap();
 
     let method = zip::CompressionMethod::Deflated;
-    let ignore_list: &Vec<String> = &vec!();
+    let ignore_list: &Vec<String> = &vec![];
     match collect_zip_directory(src_dir, dst_file, method, ignore_list) {
         Ok(_) => {
             println!("done: {} written to {}", src_dir, dst_file);
-        },
+        }
         Err(e) => {
             println!("Error: {:?}", e);
         }
@@ -297,7 +328,7 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
     let path = PathBuf::new().join(src_dir);
     println!("Removing {}", path.display());
     match remove_dir_all(&path) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(err) => {
             eprintln!("{:?}", err);
             std::process::exit(1);
@@ -313,7 +344,12 @@ pub fn build_windows(project: &Project, build_settings: &BuildSettings, version:
 //
 // macOS .app build
 //
-pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &LoveVersion, bitness: &Bitness) -> BuildStatistics {
+pub fn build_macos(
+    project: &Project,
+    build_settings: &BuildSettings,
+    version: &LoveVersion,
+    bitness: &Bitness,
+) -> BuildStatistics {
     unsafe {
         if !IS_LOVE_BUILT {
             println!("Error: Cannot build for macOS because .love not built.");
@@ -334,12 +370,16 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
     let mut final_output_path = PathBuf::from(project.get_release_path(build_settings));
     final_output_path.push(output_file_name);
 
-    println!("Copying LÖVE from {} to {}", love_path.display(), output_path.display());
+    println!(
+        "Copying LÖVE from {} to {}",
+        love_path.display(),
+        output_path.display()
+    );
 
     let mut copy_options = fs_extra::dir::CopyOptions::new();
     copy_options.overwrite = true;
     match fs_extra::dir::copy(&love_path, &output_path, &copy_options) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(err) => {
             eprintln!("{:?}", err);
             std::process::exit(1);
@@ -352,20 +392,24 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
     if final_output_path.exists() {
         println!("Removing {}", final_output_path.display());
         match std::fs::remove_dir_all(&final_output_path) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(err) => {
-                 eprintln!("{:?}", err);
-                 std::process::exit(1);
+                eprintln!("{:?}", err);
+                std::process::exit(1);
             }
         };
     }
 
-    println!("Renaming LÖVE from {} to {}", local_love_app_path.display(), final_output_path.display());
+    println!(
+        "Renaming LÖVE from {} to {}",
+        local_love_app_path.display(),
+        final_output_path.display()
+    );
     match std::fs::rename(&local_love_app_path, &final_output_path) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(err) => {
-             eprintln!("{:?}", err);
-             std::process::exit(1);
+            eprintln!("{:?}", err);
+            std::process::exit(1);
         }
     };
 
@@ -376,15 +420,19 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
     resources_path.push("Contents");
     resources_path.push("Resources");
     resources_path.push(get_love_file_name(&project));
-    println!("Copying .love file from {} to {}", local_love_file_path.display(), resources_path.display());
+    println!(
+        "Copying .love file from {} to {}",
+        local_love_file_path.display(),
+        resources_path.display()
+    );
 
     let mut copy_options = fs_extra::file::CopyOptions::new();
     copy_options.overwrite = true;
     match fs_extra::file::copy(local_love_file_path, resources_path, &copy_options) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(err) => {
-             eprintln!("{:?}", err);
-             std::process::exit(1);
+            eprintln!("{:?}", err);
+            std::process::exit(1);
         }
     };
 
@@ -396,33 +444,35 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
     println!("Rewriting {}", plist_path.display());
 
     let mut buffer = String::new();
-    let mut file = match std::fs::OpenOptions::new()
-        .read(true)
-        .open(&plist_path) {
+    let mut file = match std::fs::OpenOptions::new().read(true).open(&plist_path) {
         Ok(file) => file,
         Err(why) => {
-             eprintln!("Could not open file: {}", why);
-             std::process::exit(1);
+            eprintln!("Could not open file: {}", why);
+            std::process::exit(1);
         }
     };
 
     match file.read_to_string(&mut buffer) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(why) => {
-             eprintln!("Could not read file: {}", why);
-             std::process::exit(1);
+            eprintln!("Could not read file: {}", why);
+            std::process::exit(1);
         }
     };
 
     let re = regex::Regex::new("(CFBundleIdentifier.*\n\t<string>)(.*)(</string>)").unwrap();
-    buffer = re.replace(buffer.as_str(), |caps: &regex::Captures| {
-        [&caps[1], project.uti.as_str(), &caps[3]].join("")
-    }).to_string();
+    buffer = re
+        .replace(buffer.as_str(), |caps: &regex::Captures| {
+            [&caps[1], project.uti.as_str(), &caps[3]].join("")
+        })
+        .to_string();
 
     let re = regex::Regex::new("(CFBundleName.*\n\t<string>)(.*)(</string>)").unwrap();
-    buffer = re.replace(buffer.as_str(), |caps: &regex::Captures| {
-        [&caps[1], project.title.as_str(), &caps[3]].join("")
-    }).to_string();
+    buffer = re
+        .replace(buffer.as_str(), |caps: &regex::Captures| {
+            [&caps[1], project.title.as_str(), &caps[3]].join("")
+        })
+        .to_string();
 
     let re = regex::RegexBuilder::new("^\t<key>UTExportedTypeDeclarations.*(\n.*)+\t</array>\n")
         .multi_line(true)
@@ -433,19 +483,20 @@ pub fn build_macos(project: &Project, build_settings: &BuildSettings, version: &
     let mut file = match std::fs::OpenOptions::new()
         .write(true)
         .truncate(true)
-        .open(&plist_path) {
+        .open(&plist_path)
+    {
         Ok(file) => file,
         Err(why) => {
-             eprintln!("Could not open file: {}", why);
-             std::process::exit(1);
+            eprintln!("Could not open file: {}", why);
+            std::process::exit(1);
         }
     };
 
     match file.write_all(buffer.as_bytes()) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(why) => {
-             eprintln!("Could not write output file: {}", why);
-             std::process::exit(1);
+            eprintln!("Could not write output file: {}", why);
+            std::process::exit(1);
         }
     };
 
@@ -468,9 +519,15 @@ fn should_exclude_file(file_name: String, ignore_list: &Vec<String>) -> bool {
     false
 }
 
-fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, method: zip::CompressionMethod, ignore_list: &Vec<String>)
-              -> zip::result::ZipResult<()>
-    where T: Write+Seek
+fn zip_directory<T>(
+    it: &mut Iterator<Item = DirEntry>,
+    prefix: &str,
+    writer: T,
+    method: zip::CompressionMethod,
+    ignore_list: &Vec<String>,
+) -> zip::result::ZipResult<()>
+where
+    T: Write + Seek,
 {
     let mut zip = zip::ZipWriter::new(writer);
     let options = FileOptions::default()
@@ -482,7 +539,8 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
         let path = entry.path();
         let name = path.strip_prefix(Path::new(prefix)).unwrap();
 
-        if path.is_file() && !should_exclude_file(name.to_str().unwrap().to_string(), &ignore_list) {
+        if path.is_file() && !should_exclude_file(name.to_str().unwrap().to_string(), &ignore_list)
+        {
             zip.start_file_from_path(name, options)?;
             let mut f = File::open(path)?;
 
@@ -495,7 +553,12 @@ fn zip_directory<T>(it: &mut Iterator<Item=DirEntry>, prefix: &str, writer: T, m
     Result::Ok(())
 }
 
-fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::CompressionMethod, ignore_list: &Vec<String>) -> zip::result::ZipResult<()> {
+fn collect_zip_directory(
+    src_dir: &str,
+    dst_file: &str,
+    method: zip::CompressionMethod,
+    ignore_list: &Vec<String>,
+) -> zip::result::ZipResult<()> {
     if !Path::new(src_dir).is_dir() {
         return Err(ZipError::FileNotFound);
     }
@@ -506,16 +569,20 @@ fn collect_zip_directory(src_dir: &str, dst_file: &str, method: zip::Compression
     let walkdir = WalkDir::new(src_dir.to_string());
     let it = walkdir.into_iter();
 
-    zip_directory(&mut it.filter_map(|e| e.ok()), src_dir, file, method, ignore_list)?;
+    zip_directory(
+        &mut it.filter_map(|e| e.ok()),
+        src_dir,
+        file,
+        method,
+        ignore_list,
+    )?;
 
     Ok(())
 }
 
 impl Project {
     fn get_release_path(&self, build_settings: &BuildSettings) -> PathBuf {
-        let mut path = Path::new(self.directory.as_str())
-            .canonicalize()
-            .unwrap();
+        let mut path = Path::new(self.directory.as_str()).canonicalize().unwrap();
         path.push(build_settings.output_directory.as_str());
         path
     }

@@ -1,17 +1,17 @@
 use std::str::FromStr;
 
 #[derive(Debug)]
-pub struct BuildSettings<> {
+pub struct BuildSettings {
     pub output_directory: String,
     pub ignore_list: Vec<String>,
     pub exclude_default_ignore_list: bool,
 }
 
 pub struct Project {
-    pub title: String,          // Ex: "My Super Awesome Game"
-    pub package_name: String,   // Ex: "super_game"
+    pub title: String,        // Ex: "My Super Awesome Game"
+    pub package_name: String, // Ex: "super_game"
     pub directory: String,
-    pub uti: String,            // Uniform Type Identifier, e.g. "org.love2d.love"
+    pub uti: String, // Uniform Type Identifier, e.g. "org.love2d.love"
 
     pub authors: String,
     pub description: String,
@@ -59,7 +59,7 @@ pub struct BuildStatistics {
 
 impl FromStr for LoveVersion {
     type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err>{
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "11.2" => Ok(LoveVersion::V11_2),
             "11.1" => Ok(LoveVersion::V11_1),
@@ -80,7 +80,8 @@ impl ToString for LoveVersion {
             &V11_1 => "11.1",
             &V11_0 => "11.0",
             &V0_10_2 => "0.10.2",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -91,6 +92,7 @@ impl ToString for Bitness {
         match self {
             &X86 => "x86",
             &X64 => "x64",
-        }.to_string()
+        }
+        .to_string()
     }
 }

@@ -1,86 +1,118 @@
 use crate::types::*;
 
-use app_dirs::*;
 use crate::APP_INFO;
+use app_dirs::*;
 
+use crate::{Bitness, Platform};
 use reqwest;
-use crate::{Platform, Bitness};
 
-use std::io::Write;
 use std::fs::File;
+use std::io::Write;
 
 pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitness) {
     let file_info = match (version, platform, bitness) {
-        (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.2-win64.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.2-win64.zip",
         },
-        (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.2-win32.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.2-win32.zip",
         },
-        (&LoveVersion::V11_2, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_2, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.2-macos.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.2-macos.zip",
         },
 
-        (&LoveVersion::V11_1, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_1, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.1-win64.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.1-win64.zip",
         },
-        (&LoveVersion::V11_1, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_1, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.1-win32.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.1-win32.zip",
         },
-        (&LoveVersion::V11_1, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_1, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.1-macos.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.1-macos.zip",
         },
 
-        (&LoveVersion::V11_0, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_0, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.0.0-win64.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.0.0-win64.zip",
         },
-        (&LoveVersion::V11_0, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_0, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.0.0-win32.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.0.0-win32.zip",
         },
-        (&LoveVersion::V11_0, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V11_0, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-11.0.0-macos.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.0.0-macos.zip",
         },
 
-        (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-0.10.2-win64.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-0.10.2-win64.zip",
         },
-        (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-0.10.2-win32.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-0.10.2-win32.zip",
         },
-        (&LoveVersion::V0_10_2, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo{
-            version, platform, bitness,
+        (&LoveVersion::V0_10_2, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
             filename: "love-0.10.2-macosx-x64.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-0.10.2-macosx-x64.zip",
         },
         _ => {
-            eprintln!("Unsupported platform {:?}-{:?} for version {:?}", bitness, platform, version);
+            eprintln!(
+                "Unsupported platform {:?}-{:?} for version {:?}",
+                bitness, platform, version
+            );
             std::process::exit(1);
         }
     };
 
-    let mut output_file_path = app_dir(AppDataType::UserData, &APP_INFO, version.to_string().as_str()).unwrap();
+    let mut output_file_path = app_dir(
+        AppDataType::UserData,
+        &APP_INFO,
+        version.to_string().as_str(),
+    )
+    .unwrap();
     output_file_path.push(file_info.filename);
 
     let zip_exists: bool = output_file_path.exists();
@@ -92,15 +124,13 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         println!("Downloading '{}'", file_info.url);
 
         let mut resp = match reqwest::get(file_info.url) {
-            Ok(res) => {
-                match reqwest::get(res.url().as_str()) {
-                    Ok(res) => res,
-                    Err(why) => {
-                        eprintln!("Could not fetch '{}': {}", file_info.url, why);
-                        std::process::exit(1);
-                    }
+            Ok(res) => match reqwest::get(res.url().as_str()) {
+                Ok(res) => res,
+                Err(why) => {
+                    eprintln!("Could not fetch '{}': {}", file_info.url, why);
+                    std::process::exit(1);
                 }
-            }
+            },
             Err(why) => {
                 eprintln!("Could not fetch '{}': {}", file_info.url, why);
                 std::process::exit(1);
@@ -110,7 +140,11 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         let file = match File::create(&output_file_path) {
             Ok(file) => file,
             Err(why) => {
-                eprintln!("Unable to create file '{}': {}", output_file_path.display(), why);
+                eprintln!(
+                    "Unable to create file '{}': {}",
+                    output_file_path.display(),
+                    why
+                );
                 std::process::exit(1);
             }
         };
@@ -120,7 +154,11 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         match writer.flush() {
             Ok(_) => {}
             Err(why) => {
-                eprintln!("Could not write file '{}': {}", output_file_path.display(), why);
+                eprintln!(
+                    "Could not write file '{}': {}",
+                    output_file_path.display(),
+                    why
+                );
                 std::process::exit(1);
             }
         }
@@ -131,7 +169,11 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         let file = match File::open(&output_file_path) {
             Ok(file) => file,
             Err(why) => {
-                eprintln!("Unable to open file '{}': {}", output_file_path.display(), why);
+                eprintln!(
+                    "Unable to open file '{}': {}",
+                    output_file_path.display(),
+                    why
+                );
                 std::process::exit(1);
             }
         };
@@ -170,10 +212,10 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
                 use std::os::unix::fs::PermissionsExt;
 
                 if let Some(mode) = file.unix_mode() {
-                    std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode)).unwrap();
+                    std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))
+                        .unwrap();
                 }
             }
         }
-
     }
 }
