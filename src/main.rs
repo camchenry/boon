@@ -1,3 +1,17 @@
+#![warn(
+    clippy::all,
+    clippy::restriction,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo
+)]
+#![allow(
+    clippy::missing_docs_in_private_items,
+    clippy::print_stdout,
+    clippy::non_ascii_literal,
+    clippy::implicit_return
+)]
+
 mod types;
 use crate::types::*;
 
@@ -25,12 +39,9 @@ fn main() {
 
     let default_config = config::File::from_str(DEFAULT_CONFIG, config::FileFormat::Toml);
 
-    match settings.merge(default_config) {
-        Ok(_) => {}
-        _ => {
-            eprintln!("Could not set default configuration.");
-            std::process::exit(1);
-        }
+    if settings.merge(default_config).is_err() {
+        eprintln!("Could not set default configuration.");
+        std::process::exit(1);
     }
 
     let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
@@ -55,7 +66,7 @@ fn main() {
     }
 
     let build_settings = BuildSettings {
-        ignore_list: ignore_list,
+        ignore_list,
         exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list").unwrap(),
         output_directory: settings.get("build.output_directory").unwrap(),
     };
@@ -135,31 +146,49 @@ fn main() {
             }
         }
         ("build", Some(subcmd)) => {
-            let directory = subcmd.value_of("DIRECTORY");
-            let target = subcmd.value_of("target");
-            let version: LoveVersion = subcmd
+            let directory = subcmd
+                .value_of("DIRECTORY")
+                .expect("Could not parse directory from command");
+            let target = subcmd
+                .value_of("target")
+                .expect("Could not parse target from command");
+            let version = subcmd
                 .value_of("version")
-                .unwrap()
+                .expect("Could not parse version string")
                 .parse::<LoveVersion>()
-                .unwrap();
+                .expect("Could not parse LoveVersion");
 
             println!(
                 "Building target `{}` from directory `{}`",
-                target.unwrap(),
-                directory.unwrap()
+                target, directory
             );
 
             let project = Project {
-                title: settings.get_str("project.title").unwrap(),
-                package_name: settings.get_str("project.package_name").unwrap(),
-                directory: directory.unwrap().to_string(),
-                uti: settings.get_str("project.uti").unwrap(),
-
-                authors: settings.get_str("project.authors").unwrap(),
-                description: settings.get_str("project.description").unwrap(),
-                email: settings.get_str("project.email").unwrap(),
-                url: settings.get_str("project.url").unwrap(),
-                version: settings.get_str("project.version").unwrap(),
+                title: settings
+                    .get_str("project.title")
+                    .expect("Could not get project title"),
+                package_name: settings
+                    .get_str("project.package_name")
+                    .expect("Could not get project package name"),
+                directory: directory.to_string(),
+                uti: settings
+                    .get_str("project.uti")
+                    .expect("Could not get project UTI"),
+                authors: settings
+                    .get_str("project.authors")
+                    .expect("Could not get project authors"),
+                description: settings
+                    .get_str("project.description")
+                    .expect("Could not get project description"),
+                email: settings
+                    .get_str("project.email")
+                    .expect("Could not get project email"),
+                url: settings
+                    .get_str("project.url")
+                    .expect("Could not get project URL"),
+                version: settings
+                    .get_str("project.version")
+                    .expect("Could not get project version"),
             };
 
             build::build_init(&project, &build_settings);
@@ -167,11 +196,11 @@ fn main() {
             let mut stats_list = Vec::new();
 
             match target {
-                Some("love") => {
+                "love" => {
                     let stats = build::build_love(&project, &build_settings);
                     stats_list.push(stats);
                 }
-                Some("windows") => {
+                "windows" => {
                     let stats = build::build_love(&project, &build_settings);
                     stats_list.push(stats);
                     let stats =
@@ -181,7 +210,7 @@ fn main() {
                         build::build_windows(&project, &build_settings, &version, &Bitness::X64);
                     stats_list.push(stats);
                 }
-                Some("macos") => {
+                "macos" => {
                     let stats = build::build_love(&project, &build_settings);
                     stats_list.push(stats);
                     let stats =
@@ -200,11 +229,11 @@ fn main() {
         ("love", Some(subcmd)) => {
             match subcmd.subcommand() {
                 ("download", Some(love_subcmd)) => {
-                    let version: LoveVersion = love_subcmd
+                    let version = love_subcmd
                         .value_of("VERSION")
-                        .unwrap()
+                        .expect("Could not parse version string")
                         .parse::<LoveVersion>()
-                        .unwrap();
+                        .expect("Could not parse LoveVersion");
 
                     download::download_love(&version, &Platform::Windows, &Bitness::X86);
                     download::download_love(&version, &Platform::Windows, &Bitness::X64);
@@ -218,16 +247,16 @@ fn main() {
                 ("remove", Some(love_subcmd)) => {
                     let version = love_subcmd
                         .value_of("VERSION")
-                        .unwrap()
+                        .expect("Could not parse version string")
                         .parse::<LoveVersion>()
-                        .unwrap()
+                        .expect("Could not parse LoveVersion")
                         .to_string();
 
                     let installed_versions = get_installed_love_versions();
 
                     if installed_versions.contains(&version) {
-                        let output_file_path =
-                            app_dir(AppDataType::UserData, &APP_INFO, "/").unwrap();
+                        let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/")
+                            .expect("Could not get app directory path");
                         let path = PathBuf::new().join(output_file_path).join(&version);
                         match remove_dir_all(&path) {
                             Ok(_) => {
@@ -255,7 +284,9 @@ fn main() {
         ("clean", Some(_subcmd)) => {
             // @TODO: Get top-level directory from git?
             let directory = ".";
-            let mut release_dir_path = Path::new(directory).canonicalize().unwrap();
+            let mut release_dir_path = Path::new(directory)
+                .canonicalize()
+                .expect("Could not get canonical directory path");
             release_dir_path.push(build_settings.output_directory.as_str());
 
             if release_dir_path.exists() {
@@ -263,7 +294,7 @@ fn main() {
 
                 match remove_dir_all(&release_dir_path) {
                     Ok(_) => {
-                        println!("");
+                        println!();
                     }
                     Err(err) => {
                         eprintln!("Could not clean {}: {}", release_dir_path.display(), err);
@@ -282,10 +313,11 @@ fn main() {
 
 fn get_installed_love_versions() -> Vec<String> {
     let mut installed_versions: Vec<String> = Vec::new();
-    let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/").unwrap();
+    let output_file_path =
+        app_dir(AppDataType::UserData, &APP_INFO, "/").expect("Could not get app directory path");
     let walker = WalkDir::new(output_file_path).max_depth(1).into_iter();
     for entry in walker {
-        let entry = entry.unwrap();
+        let entry = entry.expect("Could not get DirEntry");
         if entry.depth() == 1 {
             let file_name = entry
                 .file_name()
@@ -295,9 +327,8 @@ fn get_installed_love_versions() -> Vec<String> {
             // Exclude directories that do not parse to a love
             // version, just in case some bogus directories
             // got in there somehow.
-            match file_name.parse::<LoveVersion>() {
-                Ok(version) => installed_versions.push(version.to_string()),
-                Err(_) => {}
+            if let Ok(version) = file_name.parse::<LoveVersion>() {
+                installed_versions.push(version.to_string())
             }
         }
     }
