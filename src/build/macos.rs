@@ -22,7 +22,7 @@ pub fn create_app(
 
     let output_file_name = get_output_filename(project, &Platform::MacOs, bitness);
     let output_path = project.get_release_path(build_settings);
-    let mut final_output_path = PathBuf::from(project.get_release_path(build_settings));
+    let mut final_output_path = project.get_release_path(build_settings);
     final_output_path.push(output_file_name);
 
     println!(
@@ -41,8 +41,14 @@ pub fn create_app(
         }
     };
 
-    let mut local_love_app_path = PathBuf::from(project.get_release_path(build_settings));
-    local_love_app_path.push(love_path.file_name().unwrap().to_str().unwrap());
+    let mut local_love_app_path = project.get_release_path(build_settings);
+    local_love_app_path.push(
+        love_path
+            .file_name()
+            .expect("Could not get file name")
+            .to_str()
+            .expect("Could not do string conversion"),
+    );
 
     if final_output_path.exists() {
         println!("Removing {}", final_output_path.display());
@@ -68,13 +74,13 @@ pub fn create_app(
         }
     };
 
-    let love_file_name = get_love_file_name(&project);
-    let mut local_love_file_path = PathBuf::from(project.get_release_path(build_settings));
+    let love_file_name = get_love_file_name(project);
+    let mut local_love_file_path = project.get_release_path(build_settings);
     local_love_file_path.push(love_file_name);
     let mut resources_path = PathBuf::from(&final_output_path);
     resources_path.push("Contents");
     resources_path.push("Resources");
-    resources_path.push(get_love_file_name(&project));
+    resources_path.push(get_love_file_name(project));
     println!(
         "Copying .love file from {} to {}",
         local_love_file_path.display(),
@@ -115,24 +121,36 @@ pub fn create_app(
         }
     };
 
-    let re = regex::Regex::new("(CFBundleIdentifier.*\n\t<string>)(.*)(</string>)").unwrap();
+    let re = regex::Regex::new("(CFBundleIdentifier.*\n\t<string>)(.*)(</string>)")
+        .expect("Could not create regex");
     buffer = re
         .replace(buffer.as_str(), |caps: &regex::Captures| {
-            [&caps[1], project.uti.as_str(), &caps[3]].join("")
+            [
+                caps.get(1).expect("Could not get capture").as_str(),
+                project.uti.as_str(),
+                caps.get(3).expect("Could not get capture").as_str(),
+            ]
+            .join("")
         })
         .to_string();
 
-    let re = regex::Regex::new("(CFBundleName.*\n\t<string>)(.*)(</string>)").unwrap();
+    let re = regex::Regex::new("(CFBundleName.*\n\t<string>)(.*)(</string>)")
+        .expect("Could not create regex");
     buffer = re
         .replace(buffer.as_str(), |caps: &regex::Captures| {
-            [&caps[1], project.title.as_str(), &caps[3]].join("")
+            [
+                caps.get(1).expect("Could not get capture").as_str(),
+                project.title.as_str(),
+                caps.get(3).expect("Could not get capture").as_str(),
+            ]
+            .join("")
         })
         .to_string();
 
     let re = regex::RegexBuilder::new("^\t<key>UTExportedTypeDeclarations.*(\n.*)+\t</array>\n")
         .multi_line(true)
         .build()
-        .unwrap();
+        .expect("Could not build regex");
     buffer = re.replace(buffer.as_str(), "").to_string();
 
     let mut file = match std::fs::OpenOptions::new()
@@ -156,7 +174,7 @@ pub fn create_app(
     };
 
     BuildStatistics {
-        build_name: String::from(format!("macOS {}", bitness.to_string())),
+        build_name: format!("macOS {}", bitness.to_string()),
         build_time: start.elapsed(),
     }
 }
