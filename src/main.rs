@@ -6,12 +6,12 @@
     clippy::cargo
 )]
 #![allow(
-    clippy::missing_docs_in_private_items,
-    clippy::print_stdout,
     clippy::non_ascii_literal,
-    clippy::implicit_return
+    clippy::missing_docs_in_private_items,
+    clippy::implicit_return,
+    clippy::print_stdout,
+    clippy::module_name_repetitions
 )]
-
 mod types;
 use crate::types::*;
 

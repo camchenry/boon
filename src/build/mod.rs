@@ -6,12 +6,11 @@
     clippy::cargo
 )]
 #![allow(
-    clippy::missing_docs_in_private_items,
-    clippy::print_stdout,
     clippy::non_ascii_literal,
-    clippy::implicit_return
+    clippy::missing_docs_in_private_items,
+    clippy::implicit_return,
+    clippy::print_stdout
 )]
-
 pub mod macos;
 pub mod windows;
 
@@ -93,7 +92,8 @@ pub fn get_love_version_path(
     // @DoNotFix: The forward slash here is intentional. It will get escaped by
     // get_app_dir automatically to match the OS preference.
     let subdirectory = format!("{}/{}", &version.to_string(), &filename);
-    get_app_dir(AppDataType::UserData, &APP_INFO, &subdirectory).unwrap()
+    get_app_dir(AppDataType::UserData, &APP_INFO, &subdirectory)
+        .expect("Could not get app directory")
 }
 
 pub fn scan_files(project: &Project, _build_settings: &BuildSettings) {
@@ -109,10 +109,10 @@ pub fn scan_files(project: &Project, _build_settings: &BuildSettings) {
 pub fn init(project: &Project, build_settings: &BuildSettings) {
     // Currently does nothing. This step would be where the build process
     // would be halted for some reason (dirty files, etc.).
-    scan_files(&project, &build_settings);
+    scan_files(project, build_settings);
 
     // Ensure release directory exists.
-    let release_dir_path = project.get_release_path(&build_settings);
+    let release_dir_path = project.get_release_path(build_settings);
 
     if !release_dir_path.exists() {
         println!("Creating release directory {}", release_dir_path.display());
@@ -139,8 +139,8 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> BuildSt
     let src_dir = &project.directory;
     let love_path = project
         .get_release_path(build_settings)
-        .join(get_love_file_name(&project));
-    let dst_file = love_path.to_str().unwrap();
+        .join(get_love_file_name(project));
+    let dst_file = love_path.to_str().expect("Could not do string conversion");
     println!("Outputting LÖVE as {}", dst_file);
 
     match collect_zip_directory(src_dir, dst_file, method, &build_settings.ignore_list) {
@@ -148,7 +148,7 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> BuildSt
             println!("done: {} written to {}", src_dir, dst_file);
         }
         Err(e) => {
-            println!("Error: {:?}", e);
+            eprintln!("Error: {:?}", e);
         }
     }
 
@@ -158,12 +158,12 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> BuildSt
     }
 }
 
-fn should_exclude_file(file_name: String, ignore_list: &Vec<String>) -> bool {
+fn should_exclude_file(file_name: &str, ignore_list: &[String]) -> bool {
     for exclude_pattern in ignore_list {
         // @Performance @TODO: Could cache regex in a multi-build to
         // avoid recompiling the same patterns
-        let re = regex::Regex::new(exclude_pattern).unwrap();
-        if re.is_match(file_name.as_str()) {
+        let re = regex::Regex::new(exclude_pattern).expect("Could not compile regex pattern");
+        if re.is_match(file_name) {
             return true;
         }
     }
@@ -172,11 +172,11 @@ fn should_exclude_file(file_name: String, ignore_list: &Vec<String>) -> bool {
 }
 
 fn zip_directory<T>(
-    it: &mut Iterator<Item = DirEntry>,
+    it: &mut dyn Iterator<Item = DirEntry>,
     prefix: &str,
     writer: T,
     method: zip::CompressionMethod,
-    ignore_list: &Vec<String>,
+    ignore_list: &[String],
 ) -> zip::result::ZipResult<()>
 where
     T: Write + Seek,
@@ -189,9 +189,15 @@ where
     let mut buffer = Vec::new();
     for entry in it {
         let path = entry.path();
-        let name = path.strip_prefix(Path::new(prefix)).unwrap();
+        let name = path
+            .strip_prefix(Path::new(prefix))
+            .expect("Could not get path suffix");
 
-        if path.is_file() && !should_exclude_file(name.to_str().unwrap().to_string(), &ignore_list)
+        if path.is_file()
+            && !should_exclude_file(
+                name.to_str().expect("Could not do string conversion"),
+                ignore_list,
+            )
         {
             zip.start_file_from_path(name, options)?;
             let mut f = File::open(path)?;
@@ -209,20 +215,21 @@ fn collect_zip_directory(
     src_dir: &str,
     dst_file: &str,
     method: zip::CompressionMethod,
-    ignore_list: &Vec<String>,
+    ignore_list: &[String],
 ) -> zip::result::ZipResult<()> {
     if !Path::new(src_dir).is_dir() {
         return Err(ZipError::FileNotFound);
     }
 
     let path = Path::new(dst_file);
-    let file = File::create(&path).unwrap();
+    let file =
+        File::create(&path).unwrap_or_else(|_| panic!("Could not create file path: '{:?}'", path));
 
     let walkdir = WalkDir::new(src_dir.to_string());
     let it = walkdir.into_iter();
 
     zip_directory(
-        &mut it.filter_map(|e| e.ok()),
+        &mut it.filter_map(std::result::Result::ok),
         src_dir,
         file,
         method,
@@ -234,7 +241,9 @@ fn collect_zip_directory(
 
 impl Project {
     fn get_release_path(&self, build_settings: &BuildSettings) -> PathBuf {
-        let mut path = Path::new(self.directory.as_str()).canonicalize().unwrap();
+        let mut path = Path::new(self.directory.as_str())
+            .canonicalize()
+            .expect("Could not get canonical directory path");
         path.push(build_settings.output_directory.as_str());
         path
     }

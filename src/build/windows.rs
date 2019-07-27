@@ -24,7 +24,7 @@ pub fn create_exe(
     let mut app_dir_path_clone = PathBuf::new();
     app_dir_path_clone.clone_from(&app_dir_path);
 
-    let mut love_exe_path = PathBuf::from(app_dir_path);
+    let mut love_exe_path = app_dir_path;
     love_exe_path.push("love.exe");
     if !love_exe_path.exists() {
         eprintln!("\nlove.exe not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_exe_path.display(), version.to_string());
@@ -69,8 +69,8 @@ pub fn create_exe(
         }
     };
 
-    let love_file_name = get_love_file_name(&project);
-    let mut local_love_file_path = PathBuf::from(project.get_release_path(build_settings));
+    let love_file_name = get_love_file_name(project);
+    let mut local_love_file_path = project.get_release_path(build_settings);
     local_love_file_path.push(love_file_name);
 
     println!(
@@ -82,19 +82,35 @@ pub fn create_exe(
     copy_options.overwrite = true;
 
     // copy all .dll, .txt, and .ico files from the love source
-    let search_for_files_dll = app_dir_path_clone.join("*.dll");
-    let search_for_files_txt = app_dir_path_clone.join("*.txt");
-    let search_for_files_ico = app_dir_path_clone.join("*.ico");
-    for entry in glob(search_for_files_dll.to_str().unwrap())
-        .unwrap()
-        .chain(glob(search_for_files_txt.to_str().unwrap()).unwrap())
-        .chain(glob(search_for_files_ico.to_str().unwrap()).unwrap())
-    {
+    let dll_glob = glob(
+        app_dir_path_clone
+            .join("*.dll")
+            .to_str()
+            .expect("Could not convert string"),
+    )
+    .expect("Could not glob *.dll");
+    let txt_glob = glob(
+        app_dir_path_clone
+            .join("*.txt")
+            .to_str()
+            .expect("Could not convert string"),
+    )
+    .expect("Could not glob *.txt");
+    let ico_glob = glob(
+        app_dir_path_clone
+            .join("*.ico")
+            .to_str()
+            .expect("Could not convert string"),
+    )
+    .expect("Could not glob *.ico");
+    for entry in dll_glob.chain(txt_glob).chain(ico_glob) {
         match entry {
             Ok(path) => {
-                let local_file_name = path.file_name().unwrap().to_str().unwrap();
-                //println!("Local file name: {}", local_file_name);
-                //println!("copying {:?} to {}", path.display(), project.get_release_path().join(zip_output_file_name).join(local_file_name).display());
+                let local_file_name = path
+                    .file_name()
+                    .expect("Could not get file name")
+                    .to_str()
+                    .expect("Could not do string conversion");
 
                 match fs_extra::file::copy(
                     &path,
@@ -114,7 +130,7 @@ pub fn create_exe(
 
             // if the path matched but was unreadable,
             // thereby preventing its contents from matching
-            Err(e) => println!("{:?}", e),
+            Err(e) => eprintln!("{:?}", e),
         }
     }
 
@@ -158,11 +174,11 @@ pub fn create_exe(
         .join(zip_output_file_name);
 
     let src_dir = output_path.clone();
-    let src_dir = src_dir.to_str().unwrap();
+    let src_dir = src_dir.to_str().expect("Could not do string conversion");
 
-    let mut dst_file = output_path.clone();
+    let mut dst_file = output_path;
     dst_file.set_extension("zip");
-    let dst_file = dst_file.to_str().unwrap();
+    let dst_file = dst_file.to_str().expect("Could not do string conversion");
 
     let method = zip::CompressionMethod::Deflated;
     let ignore_list: &Vec<String> = &vec![];
@@ -171,7 +187,7 @@ pub fn create_exe(
             println!("done: {} written to {}", src_dir, dst_file);
         }
         Err(e) => {
-            println!("Error: {:?}", e);
+            eprintln!("Error: {:?}", e);
         }
     }
     let path = PathBuf::new().join(src_dir);
@@ -185,7 +201,7 @@ pub fn create_exe(
     };
 
     BuildStatistics {
-        build_name: String::from(format!("Windows {}", bitness.to_string())),
+        build_name: format!("Windows {}", bitness.to_string()),
         build_time: start.elapsed(),
     }
 }
