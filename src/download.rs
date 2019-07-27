@@ -112,14 +112,19 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         &APP_INFO,
         version.to_string().as_str(),
     )
-    .unwrap();
+    .expect("Could not get app directory path");
     output_file_path.push(file_info.filename);
 
     let zip_exists: bool = output_file_path.exists();
 
     // @TODO: Add integrity checking with hash
     if zip_exists {
-        println!("File already exists: {:?}", output_file_path);
+        println!(
+            "File already exists: {}",
+            output_file_path
+                .to_str()
+                .expect("Could not do string conversion")
+        );
     } else {
         println!("Downloading '{}'", file_info.url);
 
@@ -150,7 +155,10 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         };
 
         let mut writer = std::io::BufWriter::new(&file);
-        &resp.copy_to(&mut writer);
+        if resp.copy_to(&mut writer).is_err() {
+            eprintln!("Could not copy response to file");
+            std::process::exit(1);
+        }
         match writer.flush() {
             Ok(_) => {}
             Err(why) => {
@@ -187,23 +195,27 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
         };
 
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i).unwrap();
+            let mut file = archive
+                .by_index(i)
+                .unwrap_or_else(|_| panic!("Could not get archive file by index '{}'", i));
             let mut outpath = output_file_path.clone();
             outpath.pop();
             outpath.push(file.sanitized_name());
 
             if (&*file.name()).ends_with('/') {
                 //println!("File {} extracted to \"{}\"", i, outpath.as_path().display());
-                std::fs::create_dir_all(&outpath).unwrap();
+                std::fs::create_dir_all(&outpath).expect("Could not create output directory path");
             } else {
                 //println!("File {} extracted to \"{}\" ({} bytes)", i, outpath.as_path().display(), file.size());
                 if let Some(p) = outpath.parent() {
                     if !p.exists() {
-                        std::fs::create_dir_all(&p).unwrap();
+                        std::fs::create_dir_all(&p)
+                            .expect("Could not create output directory path");
                     }
                 }
-                let mut outfile = std::fs::File::create(&outpath).unwrap();
-                std::io::copy(&mut file, &mut outfile).unwrap();
+                let mut outfile =
+                    std::fs::File::create(&outpath).expect("Could not create output file");
+                std::io::copy(&mut file, &mut outfile).expect("Could not copy data to output file");
             }
 
             // Get and Set permissions
@@ -213,7 +225,7 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
 
                 if let Some(mode) = file.unix_mode() {
                     std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))
-                        .unwrap();
+                        .expect("Could not set permissions on file");
                 }
             }
         }
