@@ -29,7 +29,7 @@ jobs:
         rust-version: ${{ matrix.rust }}
     - uses: actions/checkout@master
     - name: Run build
-      run: cargo build --verbose
+      run: cargo build --release --verbose
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v1-release
       with:
