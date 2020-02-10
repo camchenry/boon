@@ -7,14 +7,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, nightly]
         include:
           - os: ubuntu-latest
+            rust: stable
             artifact_name: boon
             asset_name: boon-linux-amd64
           - os: windows-latest
+            rust: stable
             artifact_name: boon.exe
             asset_name: boon-windows-amd64
           - os: macos-latest
+            rust: stable
             artifact_name: boon
             asset_name: boon-macos-amd64
 
