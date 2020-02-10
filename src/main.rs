@@ -73,8 +73,8 @@ fn main() {
 
     let targets = &["love", "windows", "macos"];
 
-    let default_love_version = "11.2";
-    let available_love_versions = &["11.2", "11.1", "11.0", "0.10.2"];
+    let default_love_version = "11.3";
+    let available_love_versions = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
 
     let subcmd_build = SubCommand::with_name("build")
         .about("Build game for a target platform")

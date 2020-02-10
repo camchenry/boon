@@ -11,6 +11,27 @@ use std::io::Write;
 
 pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitness) {
     let file_info = match (version, platform, bitness) {
+        (&LoveVersion::V11_3, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
+            filename: "love-11.3-win64.zip",
+            url: "https://bitbucket.org/rude/love/downloads/love-11.3-win64.zip",
+        },
+        (&LoveVersion::V11_3, &Platform::Windows, &Bitness::X86) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
+            filename: "love-11.3-win32.zip",
+            url: "https://bitbucket.org/rude/love/downloads/love-11.3-win32.zip",
+        },
+        (&LoveVersion::V11_3, &Platform::MacOs, &Bitness::X64) => LoveVersionFileInfo {
+            version,
+            platform,
+            bitness,
+            filename: "love-11.3-win32.zip",
+            url: "https://bitbucket.org/rude/love/downloads/love-11.3-macos.zip",
+        },
         (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo {
             version,
             platform,
