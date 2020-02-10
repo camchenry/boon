@@ -7,8 +7,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-        rust: [stable, nightly]
+        include:
+          - os: ubuntu-latest
+            artifact_name: boon
+            asset_name: boon-linux-amd64
+          - os: windows-latest
+            artifact_name: boon.exe
+            asset_name: boon-windows-amd64
+          - os: macos-latest
+            artifact_name: boon
+            asset_name: boon-macos-amd64
 
     steps:
     - uses: hecrj/setup-rust-action@v1
@@ -17,11 +25,10 @@ jobs:
     - uses: actions/checkout@master
     - name: Run build
       run: cargo build --verbose
-    
-    - name: Upload artifact
-      uses: actions/upload-artifact@v1.0.0
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v1-release
       with:
-        # Artifact name
-        name: boon-${{ matrix.os }}
-        # Directory containing files to upload
-        path: ./target/release/boon
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
