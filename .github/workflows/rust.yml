@@ -1,0 +1,40 @@
+name: Rust
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, nightly]
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            artifact_name: boon
+            asset_name: boon-linux-amd64
+          - os: windows-latest
+            rust: stable
+            artifact_name: boon.exe
+            asset_name: boon-windows-amd64
+          - os: macos-latest
+            rust: stable
+            artifact_name: boon
+            asset_name: boon-macos-amd64
+
+    steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: ${{ matrix.rust }}
+    - uses: actions/checkout@master
+    - name: Run build
+      run: cargo build --release --verbose
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v1-release
+      if: github.ref == 'master' && matrix.rust == 'stable'
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: latest
