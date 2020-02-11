@@ -37,8 +37,8 @@ pub fn get_love_version_file_name(
     bitness: &Bitness,
 ) -> String {
     match (version, platform, bitness) {
-        (&LoveVersion::V11_3, &Platform::Windows, &Bitness::X64) => "love-11.3.0-win64",
-        (&LoveVersion::V11_3, &Platform::Windows, &Bitness::X86) => "love-11.3.0-win32",
+        (&LoveVersion::V11_3, &Platform::Windows, &Bitness::X64) => "love-11.3-win64",
+        (&LoveVersion::V11_3, &Platform::Windows, &Bitness::X86) => "love-11.3-win32",
 
         (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X64) => "love-11.2.0-win64",
         (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X86) => "love-11.2.0-win32",

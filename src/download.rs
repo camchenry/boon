@@ -29,7 +29,7 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
             version,
             platform,
             bitness,
-            filename: "love-11.3-win32.zip",
+            filename: "love-11.3-macos.zip",
             url: "https://bitbucket.org/rude/love/downloads/love-11.3-macos.zip",
         },
         (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X64) => LoveVersionFileInfo {
