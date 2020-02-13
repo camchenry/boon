@@ -21,21 +21,21 @@ pub struct Project {
 }
 
 /// Represents an operating system or other platform/environment.
-#[derive(Debug)]
+#[derive(Debug, Copy)]
 pub enum Platform {
     Windows,
     MacOs,
 }
 
 /// Represents a CPU architecture
-#[derive(Debug)]
+#[derive(Debug, Copy)]
 pub enum Bitness {
     X86, // 32 bit
     X64, // 64 bit
 }
 
 /// Represents a specific version of LÖVE2D
-#[derive(Debug)]
+#[derive(Debug, Copy)]
 pub enum LoveVersion {
     V11_3,
     V11_2,
@@ -45,10 +45,7 @@ pub enum LoveVersion {
 }
 
 /// File info about remote download
-pub struct LoveVersionFileInfo<'a> {
-    pub version: &'a LoveVersion,
-    pub platform: &'a crate::Platform,
-    pub bitness: &'a crate::Bitness,
+pub struct LoveDownloadLocation<'a> {
     pub filename: &'a str,
     pub url: &'a str,
 }
