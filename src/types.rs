@@ -1,12 +1,13 @@
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BuildSettings {
     pub output_directory: String,
     pub ignore_list: Vec<String>,
     pub exclude_default_ignore_list: bool,
 }
 
+#[derive(Debug, Clone)]
 pub struct Project {
     pub title: String,        // Ex: "My Super Awesome Game"
     pub package_name: String, // Ex: "super_game"
@@ -21,21 +22,21 @@ pub struct Project {
 }
 
 /// Represents an operating system or other platform/environment.
-#[derive(Debug, Copy)]
+#[derive(Debug, Copy, Clone)]
 pub enum Platform {
     Windows,
     MacOs,
 }
 
 /// Represents a CPU architecture
-#[derive(Debug, Copy)]
+#[derive(Debug, Copy, Clone)]
 pub enum Bitness {
     X86, // 32 bit
     X64, // 64 bit
 }
 
 /// Represents a specific version of LÖVE2D
-#[derive(Debug, Copy)]
+#[derive(Debug, Copy, Clone)]
 pub enum LoveVersion {
     V11_3,
     V11_2,
