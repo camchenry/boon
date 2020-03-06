@@ -32,7 +32,7 @@ jobs:
       run: cargo build --release --verbose
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v1-release
-      if: github.ref == 'master' && matrix.rust == 'stable'
+      if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: target/release/${{ matrix.artifact_name }}
