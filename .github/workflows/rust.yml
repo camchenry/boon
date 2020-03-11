@@ -47,3 +47,4 @@ jobs:
         file: ./${{ matrix.asset_name }}.zip
         asset_name: ${{ matrix.asset_name }}.zip
         tag: latest
+        overwrite: true
