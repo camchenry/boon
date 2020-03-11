@@ -31,7 +31,7 @@ jobs:
     - name: Run build
       run: cargo build --release --verbose
     - name: Create release package
-      if: github.ref == 'master' && matrix.rust == 'stable'
+      if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
       run: |
         zip ${{ matrix.asset_name }}.zip LICENSE README.md target/release/${{ matrix.artifact_name }}
     - name: Create release
