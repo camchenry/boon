@@ -48,3 +48,38 @@ jobs:
         asset_name: ${{ matrix.asset_name }}.zip
         tag: latest
         overwrite: true
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        love: [11.2, 11.3]
+        target: [love, windows, macos]
+        include:
+          - os: ubuntu-latest
+            release_download_url: https://github.com/camchenry/boon/releases/download/latest/boon-linux-amd64.zip
+            artifact_name: boon
+            asset_name: boon-linux-amd64.zip
+          - os: windows-latest
+            release_download_url: https://github.com/camchenry/boon/releases/download/latest/boon-windows-amd64.zip
+            artifact_name: boon.exe
+            asset_name: boon-windows-amd64.zip
+          - os: macos-latest
+            release_download_url: https://github.com/camchenry/boon/releases/download/latest/boon-macos-amd64.zip
+            artifact_name: boon
+            asset_name: boon-macos-amd64.zip
+    steps:
+    - name: Install LOVE (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        apt-get install -y love
+        love --version
+    - name: Download latest boon (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        wget ${{ matrix.release_download_url }}
+        unzip ${{ matrix.asset_name }}
+        boon --version
+        boon build . --target ${{ matrix.target }}
+        love "release/My Game.love"
+        if grep -q "Linux" OK; then exit 0; else exit 1; fi
