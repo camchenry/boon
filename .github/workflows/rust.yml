@@ -36,21 +36,23 @@ jobs:
         zip ${{ matrix.asset_name }}.zip LICENSE README.md target/release/${{ matrix.artifact_name }}
     - name: Create release
       id: create_release
+      if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: latest
-        release_name: latest
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
     - name: Upload release
       id: upload_release
+      if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/camchenry/boon/releases/latest/assets?name=${{ matrix.asset_name }}.zip
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
         asset_path: ./${{ matrix.asset_name }}.zip
         asset_name: ${{ matrix.asset_name }}.zip
         asset_content_type: application/zip
