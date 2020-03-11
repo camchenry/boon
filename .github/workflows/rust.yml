@@ -41,10 +41,10 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         body: "This is the latest pre-release version of boon which may not be stable."
-        tag_name: latest
-        release_name: latest
+        tag: latest
+        name: latest
         draft: false
-        prerelease: false
+        prerelease: true
         allowUpdates: true # Replace current latest release
     - name: Upload release
       id: upload_release
