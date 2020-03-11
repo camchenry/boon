@@ -37,7 +37,7 @@ jobs:
     - name: Create release package (Windows)
       if: github.ref == 'refs/heads/master' && matrix.rust == 'stable' && matrix.os == 'windows-latest'
       run: |
-        Get-ChildItem -Path LICENSE README.md ./target/release/${{ matrix.artifact_name }} | Compress-Archive -DestinationPath ./${{ matrix.asset_name }}.zip
+        Get-ChildItem -Path LICENSE, README.md, ./target/release/${{ matrix.artifact_name }} | Compress-Archive -DestinationPath ./${{ matrix.asset_name }}.zip
       shell: powershell
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v1-release
