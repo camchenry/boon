@@ -37,11 +37,10 @@ jobs:
     - name: Create release
       id: create_release
       if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: ncipollo/release-action@v1
       with:
-        body: This is the latest pre-release version of boon which may not be stable.
+        token: ${{ secrets.GITHUB_TOKEN }}
+        body: "This is the latest pre-release version of boon which may not be stable."
         tag_name: latest
         release_name: latest
         draft: false
