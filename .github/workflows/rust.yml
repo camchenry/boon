@@ -33,7 +33,7 @@ jobs:
     - name: Create release package (Unix)
       if: github.ref == 'refs/heads/master' && matrix.rust == 'stable' && matrix.os != 'windows-latest'
       run: |
-        zip ${{ matrix.asset_name }}.zip LICENSE README.md target/release/${{ matrix.artifact_name }}
+        zip --junk-paths ${{ matrix.asset_name }}.zip LICENSE README.md target/release/${{ matrix.artifact_name }}
     - name: Create release package (Windows)
       if: github.ref == 'refs/heads/master' && matrix.rust == 'stable' && matrix.os == 'windows-latest'
       run: |
