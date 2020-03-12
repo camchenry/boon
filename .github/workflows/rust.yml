@@ -72,6 +72,8 @@ jobs:
     - name: Install LOVE (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
+        sudo add-apt-repository -y ppa:bartbes/love-stable
+        sudo apt-get update -y
         sudo apt-get install -y love
         love --version
     - name: Download latest boon (Linux)
