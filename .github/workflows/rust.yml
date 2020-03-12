@@ -30,12 +30,12 @@ jobs:
     - uses: actions/checkout@master
     - name: Run build
       run: cargo build --release --verbose
-    - name: Create release package (Unix)
-      if: github.ref == 'refs/heads/master' && matrix.rust == 'stable' && matrix.os != 'windows-latest'
+    - name: Create binary package (Unix)
+      if: matrix.rust == 'stable' && matrix.os != 'windows-latest'
       run: |
         zip --junk-paths ${{ matrix.asset_name }}.zip LICENSE README.md target/release/${{ matrix.artifact_name }}
-    - name: Create release package (Windows)
-      if: github.ref == 'refs/heads/master' && matrix.rust == 'stable' && matrix.os == 'windows-latest'
+    - name: Create binary package (Windows)
+      if: matrix.rust == 'stable' && matrix.os == 'windows-latest'
       run: |
         Get-ChildItem -Path LICENSE, README.md, ./target/release/${{ matrix.artifact_name }} | Compress-Archive -DestinationPath ./${{ matrix.asset_name }}.zip
       shell: powershell
