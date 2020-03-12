@@ -40,6 +40,7 @@ jobs:
         Get-ChildItem -Path LICENSE, README.md, ./target/release/${{ matrix.artifact_name }} | Compress-Archive -DestinationPath ./${{ matrix.asset_name }}.zip
       shell: powershell
     - name: Upload binary artifact
+      if: matrix.rust == 'stable'
       uses: actions/upload-artifact@v1
       with:
         name: ${{ matrix.asset_name }}.zip
