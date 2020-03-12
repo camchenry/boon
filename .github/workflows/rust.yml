@@ -44,7 +44,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: ${{ matrix.asset_name }}.zip
-        path: ${{ matrix.asset_name }}.zip
+        path: ./${{ matrix.asset_name }}.zip
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v1-release
       if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
