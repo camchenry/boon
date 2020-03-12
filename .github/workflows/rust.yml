@@ -79,13 +79,13 @@ jobs:
       run: |
         wget ${{ matrix.release_download_url }}
         unzip ${{ matrix.asset_name }}
-        boon --version
-        boon love download ${{ matrix.love }}
-        boon build . --version ${{ matrix.love }}
+        ./boon --version
+        ./boon love download ${{ matrix.love }}
+        ./boon build . --version ${{ matrix.love }}
         love "release/My Game.love"
         if ! grep -q "Linux" OK; then exit 1; fi
         rm OK
-        boon build . --target love --version ${{ matrix.love }}
+        ./boon build . --target love --version ${{ matrix.love }}
         love "release/My Game.love"
         if ! grep -q "Linux" OK; then exit 1; fi
         rm OK
