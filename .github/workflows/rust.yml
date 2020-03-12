@@ -55,7 +55,6 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         love: [11.2, 11.3, 0.10.2]
-        target: [love, windows, macos]
         include:
           - os: ubuntu-latest
             release_download_url: https://github.com/camchenry/boon/releases/download/latest/boon-linux-amd64.zip
@@ -82,6 +81,11 @@ jobs:
         unzip ${{ matrix.asset_name }}
         boon --version
         boon love download ${{ matrix.love }}
-        boon build . --target ${{ matrix.target }} --version ${{ matrix.love }}
+        boon build . --version ${{ matrix.love }}
         love "release/My Game.love"
-        if grep -q "Linux" OK; then exit 0; else exit 1; fi
+        if ! grep -q "Linux" OK; then exit 1; fi
+        rm OK
+        boon build . --target love --version ${{ matrix.love }}
+        love "release/My Game.love"
+        if ! grep -q "Linux" OK; then exit 1; fi
+        rm OK
