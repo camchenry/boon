@@ -39,6 +39,11 @@ jobs:
       run: |
         Get-ChildItem -Path LICENSE, README.md, ./target/release/${{ matrix.artifact_name }} | Compress-Archive -DestinationPath ./${{ matrix.asset_name }}.zip
       shell: powershell
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: ${{ matrix.asset_name }}.zip
+        path: ${{ matrix.asset_name }}.zip
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v1-release
       if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
@@ -57,15 +62,12 @@ jobs:
         love: [11.2, 11.3, 0.10.2]
         include:
           - os: ubuntu-latest
-            release_download_url: https://github.com/camchenry/boon/releases/download/latest/boon-linux-amd64.zip
             artifact_name: boon
             asset_name: boon-linux-amd64.zip
           - os: windows-latest
-            release_download_url: https://github.com/camchenry/boon/releases/download/latest/boon-windows-amd64.zip
             artifact_name: boon.exe
             asset_name: boon-windows-amd64.zip
           - os: macos-latest
-            release_download_url: https://github.com/camchenry/boon/releases/download/latest/boon-macos-amd64.zip
             artifact_name: boon
             asset_name: boon-macos-amd64.zip
     steps:
@@ -78,8 +80,11 @@ jobs:
         love --version
     - name: Download latest boon (Linux)
       if: matrix.os == 'ubuntu-latest'
+      uses: actions/download-artifact@v1
+        name: ${{ matrix.asset_name }}
+    - name: Build test game (Linux)
+      if: matrix.os == 'ubuntu-latest'
       run: |
-        wget ${{ matrix.release_download_url }}
         unzip ${{ matrix.asset_name }}
         ./boon --version
         ./boon love download ${{ matrix.love }}
