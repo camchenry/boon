@@ -72,6 +72,7 @@ jobs:
             artifact_name: boon
             asset_name: boon-macos-amd64.zip
     steps:
+    - uses: actions/checkout@master
     - name: Install LOVE (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -89,8 +90,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         pwd
-        ls
-        ls /home/runner/work/boon
+        ls -l
         unzip ${{ matrix.asset_name }}
         ./boon --version
         ./boon love download ${{ matrix.love }}
