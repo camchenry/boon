@@ -81,11 +81,11 @@ jobs:
         unzip ${{ matrix.asset_name }}
         ./boon --version
         ./boon love download ${{ matrix.love }}
-        ./boon build tests/game_build --version ${{ matrix.love }}
-        love "tests/game_build/release/My Game.love"
+        ./boon build "./tests/game_build" --version ${{ matrix.love }}
+        love "./tests/game_build/release/My Game.love"
         if ! grep -q "Linux" OK; then exit 1; fi
         rm OK
-        ./boon build tests/game_build/ --target love --version ${{ matrix.love }}
-        love "tests/game_build/release/My Game.love"
+        ./boon build "./tests/game_build" --target love --version ${{ matrix.love }}
+        love "./tests/game_build/release/My Game.love"
         if ! grep -q "Linux" OK; then exit 1; fi
         rm OK
