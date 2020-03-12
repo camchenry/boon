@@ -90,6 +90,7 @@ jobs:
       run: |
         pwd
         ls -l
+        ls -l ${{ matrix.asset_name }}
         unzip ${{ matrix.asset_name }}
         ./boon --version
         ./boon love download ${{ matrix.love }}
