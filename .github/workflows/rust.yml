@@ -88,6 +88,9 @@ jobs:
     - name: Build test game (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
+        pwd
+        ls
+        ls /home/runner/work/boon
         unzip ${{ matrix.asset_name }}
         ./boon --version
         ./boon love download ${{ matrix.love }}
