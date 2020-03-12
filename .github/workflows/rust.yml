@@ -49,11 +49,12 @@ jobs:
         tag: latest
         overwrite: true
   test:
+    needs: build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-        love: [11.2, 11.3]
+        love: [11.2, 11.3, 0.10.2]
         target: [love, windows, macos]
         include:
           - os: ubuntu-latest
@@ -72,7 +73,7 @@ jobs:
     - name: Install LOVE (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        apt-get install -y love
+        sudo apt-get install -y love
         love --version
     - name: Download latest boon (Linux)
       if: matrix.os == 'ubuntu-latest'
@@ -80,6 +81,7 @@ jobs:
         wget ${{ matrix.release_download_url }}
         unzip ${{ matrix.asset_name }}
         boon --version
-        boon build . --target ${{ matrix.target }}
+        boon love download ${{ matrix.love }}
+        boon build . --target ${{ matrix.target }} --version ${{ matrix.love }}
         love "release/My Game.love"
         if grep -q "Linux" OK; then exit 0; else exit 1; fi
