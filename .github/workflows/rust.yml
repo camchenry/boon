@@ -84,13 +84,11 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       uses: actions/download-artifact@v1
       with:
-        name: ${{ matrix.asset_name }}
+        name: download
     - name: Build test game (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        pwd
-        ls -l
-        ls -l ${{ matrix.asset_name }}
+        cp download/${{ matrix.asset_name }} ./${{ matrix.asset_name }}
         unzip ${{ matrix.asset_name }}
         ./boon --version
         ./boon love download ${{ matrix.love }}
