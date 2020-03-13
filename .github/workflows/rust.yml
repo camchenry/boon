@@ -68,7 +68,7 @@ jobs:
     - name: Download latest boon
       uses: actions/download-artifact@v1
       with:
-        name: ${{ matrix.asset_name }}
+        name: ${{ env.asset_name }}
     - name: Install LOVE
       run: |
         sudo add-apt-repository -y ppa:bartbes/love-stable
@@ -77,8 +77,8 @@ jobs:
         love --version
     - name: Build test game
       run: |
-        cp ${{ matrix.asset_name }}/${{ matrix.asset_name }}.zip ./${{ matrix.asset_name }}.zip
-        unzip -o ${{ matrix.asset_name }}.zip
+        cp ${{ env.asset_name }}/${{ env.asset_name }}.zip ./${{ env.asset_name }}.zip
+        unzip -o ${{ env.asset_name }}.zip
         ./boon --version
         ./boon love download ${{ matrix.love }}
         ./boon build "./tests/game_build" --version ${{ matrix.love }}
