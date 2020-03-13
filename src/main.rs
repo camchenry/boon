@@ -48,7 +48,7 @@ fn main() {
 
     if Path::new("Boon.toml").exists() {
         // Add in `./Boon.toml`
-        match settings.merge(config::File::with_name("Boon")) {
+        match settings.merge(config::File::with_name("Boon.toml")) {
             Ok(_) => {}
             Err(e) => {
                 eprintln!("Error reading config file: {}", e);
