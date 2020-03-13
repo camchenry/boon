@@ -19,7 +19,7 @@ mod build;
 mod download;
 
 use app_dirs::*;
-use clap::{App, Arg, SubCommand};
+use clap::{crate_version, App, Arg, SubCommand};
 use remove_dir_all::*;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -119,7 +119,7 @@ fn main() {
     let subcmd_clean = SubCommand::with_name("clean").about("Remove built packages");
 
     let app_m = App::new("boon")
-        .version("0.1.0")
+        .version(crate_version!())
         .author("Cameron McHenry")
         .about("boon: LÖVE2D build and deploy tool")
         .subcommand(subcmd_init)

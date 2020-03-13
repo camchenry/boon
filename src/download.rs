@@ -104,8 +104,8 @@ pub fn download_love(version: &LoveVersion, platform: &Platform, bitness: &Bitne
     } else {
         println!("Downloading '{}'", file_info.url);
 
-        let mut resp = match reqwest::get(file_info.url) {
-            Ok(res) => match reqwest::get(res.url().as_str()) {
+        let mut resp = match reqwest::blocking::get(file_info.url) {
+            Ok(res) => match reqwest::blocking::get(res.url().as_str()) {
                 Ok(res) => res,
                 Err(why) => {
                     eprintln!("Could not fetch '{}': {}", file_info.url, why);
