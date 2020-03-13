@@ -89,7 +89,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         cp ${{ matrix.asset_name }}/${{ matrix.asset_name }}.zip ./${{ matrix.asset_name }}.zip
-        unzip ${{ matrix.asset_name }}.zip
+        unzip -o ${{ matrix.asset_name }}.zip
         ./boon --version
         ./boon love download ${{ matrix.love }}
         ./boon build "./tests/game_build" --version ${{ matrix.love }}
