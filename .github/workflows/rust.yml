@@ -59,7 +59,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
         love: [11.2, 11.3, 0.10.2]
         include:
           - os: ubuntu-latest
@@ -73,6 +73,10 @@ jobs:
             asset_name: boon-macos-amd64
     steps:
     - uses: actions/checkout@master
+    - name: Download latest boon
+      uses: actions/download-artifact@v1
+      with:
+        name: ${{ matrix.asset_name }}
     - name: Install LOVE (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -80,13 +84,28 @@ jobs:
         sudo apt-get update -y
         sudo apt-get install -y love
         love --version
-    - name: Download latest boon (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/download-artifact@v1
-      with:
-        name: ${{ matrix.asset_name }}
     - name: Build test game (Linux)
       if: matrix.os == 'ubuntu-latest'
+      run: |
+        cp ${{ matrix.asset_name }}/${{ matrix.asset_name }}.zip ./${{ matrix.asset_name }}.zip
+        unzip -o ${{ matrix.asset_name }}.zip
+        ./boon --version
+        ./boon love download ${{ matrix.love }}
+        ./boon build "./tests/game_build" --version ${{ matrix.love }}
+        love "./tests/game_build/release/My Game.love"
+        if ! grep -q "Linux" OK; then exit 1; fi
+        rm OK
+        ./boon build "./tests/game_build" --target love --version ${{ matrix.love }}
+        love "./tests/game_build/release/My Game.love"
+        if ! grep -q "Linux" OK; then exit 1; fi
+        rm OK
+    - name: Install LOVE (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install --verbose love
+        love --version
+    - name: Build test game (macOS)
+      if: matrix.os == 'macos-latest'
       run: |
         cp ${{ matrix.asset_name }}/${{ matrix.asset_name }}.zip ./${{ matrix.asset_name }}.zip
         unzip -o ${{ matrix.asset_name }}.zip
