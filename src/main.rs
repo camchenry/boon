@@ -243,9 +243,9 @@ fn main() {
                         .parse::<LoveVersion>()
                         .expect("Could not parse LoveVersion");
 
-                    download::download_love(&version, &Platform::Windows, &Bitness::X86);
-                    download::download_love(&version, &Platform::Windows, &Bitness::X64);
-                    download::download_love(&version, &Platform::MacOs, &Bitness::X64);
+                    download::download_love(version, Platform::Windows, Bitness::X86);
+                    download::download_love(version, Platform::Windows, Bitness::X64);
+                    download::download_love(version, Platform::MacOs, Bitness::X64);
 
                     println!(
                         "\nLÖVE {} is now available for building.",
