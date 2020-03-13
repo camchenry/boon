@@ -1,8 +1,6 @@
+local test = require 'test'
+
 function love.load()
-    local os = love.system.getOS()
-    local fh = assert(io.open('OK', 'wb'))
-    fh:write(os)
-    fh:flush()
-    fh:close()
+    test()
     love.event.quit()
 end
