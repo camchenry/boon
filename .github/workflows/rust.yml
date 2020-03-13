@@ -54,38 +54,28 @@ jobs:
         asset_name: ${{ matrix.asset_name }}.zip
         tag: latest
         overwrite: true
-  test:
+  test-linux:
     needs: build
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    env:
+      artifact_name: boon
+      asset_name: boon-linux-amd64
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
         love: [11.2, 11.3, 0.10.2]
-        include:
-          - os: ubuntu-latest
-            artifact_name: boon
-            asset_name: boon-linux-amd64
-          - os: windows-latest
-            artifact_name: boon.exe
-            asset_name: boon-windows-amd64
-          - os: macos-latest
-            artifact_name: boon
-            asset_name: boon-macos-amd64
     steps:
     - uses: actions/checkout@master
     - name: Download latest boon
       uses: actions/download-artifact@v1
       with:
         name: ${{ matrix.asset_name }}
-    - name: Install LOVE (Linux)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Install LOVE
       run: |
         sudo add-apt-repository -y ppa:bartbes/love-stable
         sudo apt-get update -y
         sudo apt-get install -y love
         love --version
-    - name: Build test game (Linux)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Build test game
       run: |
         cp ${{ matrix.asset_name }}/${{ matrix.asset_name }}.zip ./${{ matrix.asset_name }}.zip
         unzip -o ${{ matrix.asset_name }}.zip
@@ -99,16 +89,29 @@ jobs:
         love "./tests/game_build/release/My Game.love"
         if ! grep -q "Linux" OK; then exit 1; fi
         rm OK
+  test-macos:
+    needs: build
+    runs-on: macos-latest
+    env:
+      artifact_name: boon
+      asset_name: boon-macos-amd64
+    strategy:
+      matrix:
+        love: [11.2, 11.3, 0.10.2]
+    steps:
+    - uses: actions/checkout@master
+    - name: Download latest boon
+      uses: actions/download-artifact@v1
+      with:
+        name: ${{ env.asset_name }}
     - name: Install LOVE (macOS)
-      if: matrix.os == 'macos-latest'
       run: |
         brew install --verbose love
         love --version
     - name: Build test game (macOS)
-      if: matrix.os == 'macos-latest'
       run: |
-        cp ${{ matrix.asset_name }}/${{ matrix.asset_name }}.zip ./${{ matrix.asset_name }}.zip
-        unzip -o ${{ matrix.asset_name }}.zip
+        cp ${{ env.asset_name }}/${{ env.asset_name }}.zip ./${{ env.asset_name }}.zip
+        unzip -o ${{ env.asset_name }}.zip
         ./boon --version
         ./boon love download ${{ matrix.love }}
         ./boon build "./tests/game_build" --version ${{ matrix.love }}
