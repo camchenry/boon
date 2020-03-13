@@ -33,26 +33,26 @@ use zip::write::FileOptions;
 /// Get the folder name of where a version of LÖVE is stored in the app cache
 pub fn get_love_version_file_name(
     version: &LoveVersion,
-    platform: &Platform,
-    bitness: &Bitness,
+    platform: Platform,
+    bitness: Bitness,
 ) -> String {
     match (version, platform, bitness) {
-        (&LoveVersion::V11_3, &Platform::Windows, &Bitness::X64) => "love-11.3-win64",
-        (&LoveVersion::V11_3, &Platform::Windows, &Bitness::X86) => "love-11.3-win32",
+        (&LoveVersion::V11_3, Platform::Windows, Bitness::X64) => "love-11.3-win64",
+        (&LoveVersion::V11_3, Platform::Windows, Bitness::X86) => "love-11.3-win32",
 
-        (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X64) => "love-11.2.0-win64",
-        (&LoveVersion::V11_2, &Platform::Windows, &Bitness::X86) => "love-11.2.0-win32",
+        (&LoveVersion::V11_2, Platform::Windows, Bitness::X64) => "love-11.2.0-win64",
+        (&LoveVersion::V11_2, Platform::Windows, Bitness::X86) => "love-11.2.0-win32",
 
-        (&LoveVersion::V11_1, &Platform::Windows, &Bitness::X64) => "love-11.1.0-win64",
-        (&LoveVersion::V11_1, &Platform::Windows, &Bitness::X86) => "love-11.1.0-win32",
+        (&LoveVersion::V11_1, Platform::Windows, Bitness::X64) => "love-11.1.0-win64",
+        (&LoveVersion::V11_1, Platform::Windows, Bitness::X86) => "love-11.1.0-win32",
 
-        (&LoveVersion::V11_0, &Platform::Windows, &Bitness::X64) => "love-11.0.0-win64",
-        (&LoveVersion::V11_0, &Platform::Windows, &Bitness::X86) => "love-11.0.0-win32",
+        (&LoveVersion::V11_0, Platform::Windows, Bitness::X64) => "love-11.0.0-win64",
+        (&LoveVersion::V11_0, Platform::Windows, Bitness::X86) => "love-11.0.0-win32",
 
-        (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X64) => "love-0.10.2-win64",
-        (&LoveVersion::V0_10_2, &Platform::Windows, &Bitness::X86) => "love-0.10.2-win32",
+        (&LoveVersion::V0_10_2, Platform::Windows, Bitness::X64) => "love-0.10.2-win64",
+        (&LoveVersion::V0_10_2, Platform::Windows, Bitness::X86) => "love-0.10.2-win32",
 
-        (_, &Platform::MacOs, _) => "love.app",
+        (_, Platform::MacOs, _) => "love.app",
     }
     .to_owned()
 }
@@ -63,32 +63,27 @@ pub fn get_love_file_name(project: &Project) -> String {
 }
 
 /// Get file name for individual binary based on platform and bitness
-pub fn get_output_filename(project: &Project, platform: &Platform, bitness: &Bitness) -> String {
+pub fn get_output_filename(project: &Project, platform: Platform, bitness: Bitness) -> String {
     match (platform, bitness) {
-        (&Platform::Windows, &Bitness::X64) => format!("{}.exe", project.package_name),
-        (&Platform::Windows, &Bitness::X86) => format!("{}.exe", project.package_name),
-        (&Platform::MacOs, _) => format!("{}.app", project.title),
+        (Platform::Windows, _) => format!("{}.exe", project.package_name),
+        (Platform::MacOs, _) => format!("{}.app", project.title),
     }
 }
 
 /// Get file name of the distributed .zip file based on platform and bitness
-pub fn get_zip_output_filename(
-    project: &Project,
-    platform: &Platform,
-    bitness: &Bitness,
-) -> String {
+pub fn get_zip_output_filename(project: &Project, platform: Platform, bitness: Bitness) -> String {
     match (platform, bitness) {
-        (&Platform::Windows, &Bitness::X64) => format!("{}-win64", project.title),
-        (&Platform::Windows, &Bitness::X86) => format!("{}-win32", project.title),
-        (&Platform::MacOs, _) => format!("{}-macos", project.title),
+        (Platform::Windows, Bitness::X64) => format!("{}-win64", project.title),
+        (Platform::Windows, Bitness::X86) => format!("{}-win32", project.title),
+        (Platform::MacOs, _) => format!("{}-macos", project.title),
     }
 }
 
 /// Get a platform-specific path to the app cache directory where LÖVE is stored.
 pub fn get_love_version_path(
     version: &LoveVersion,
-    platform: &Platform,
-    bitness: &Bitness,
+    platform: Platform,
+    bitness: Bitness,
 ) -> PathBuf {
     let filename = get_love_version_file_name(version, platform, bitness);
 

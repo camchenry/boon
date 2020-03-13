@@ -14,12 +14,12 @@ pub fn create_exe(
     project: &Project,
     build_settings: &BuildSettings,
     version: &LoveVersion,
-    bitness: &Bitness,
+    bitness: Bitness,
 ) -> BuildStatistics {
     // Stats
     let start = std::time::Instant::now();
 
-    let app_dir_path = get_love_version_path(version, &Platform::Windows, bitness);
+    let app_dir_path = get_love_version_path(version, Platform::Windows, bitness);
 
     let mut app_dir_path_clone = PathBuf::new();
     app_dir_path_clone.clone_from(&app_dir_path);
@@ -31,8 +31,8 @@ pub fn create_exe(
         std::process::exit(1);
     }
 
-    let exe_file_name = get_output_filename(project, &Platform::Windows, bitness);
-    let zip_output_file_name = &get_zip_output_filename(project, &Platform::Windows, bitness);
+    let exe_file_name = get_output_filename(project, Platform::Windows, bitness);
+    let zip_output_file_name = &get_zip_output_filename(project, Platform::Windows, bitness);
     let mut output_path = project.get_release_path(build_settings);
     output_path.push(zip_output_file_name);
 
@@ -168,7 +168,7 @@ pub fn create_exe(
     }
 
     // Time to zip up the whole directory
-    let zip_output_file_name = get_zip_output_filename(project, &Platform::Windows, bitness);
+    let zip_output_file_name = get_zip_output_filename(project, Platform::Windows, bitness);
     let output_path = project
         .get_release_path(build_settings)
         .join(zip_output_file_name);

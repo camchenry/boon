@@ -9,18 +9,18 @@ pub fn create_app(
     project: &Project,
     build_settings: &BuildSettings,
     version: &LoveVersion,
-    bitness: &Bitness,
+    bitness: Bitness,
 ) -> BuildStatistics {
     // Stats
     let start = std::time::Instant::now();
 
-    let love_path = get_love_version_path(version, &Platform::MacOs, bitness);
+    let love_path = get_love_version_path(version, Platform::MacOs, bitness);
     if !love_path.exists() {
         eprintln!("\nLÖVE not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_path.display(), version.to_string());
         std::process::exit(1);
     }
 
-    let output_file_name = get_output_filename(project, &Platform::MacOs, bitness);
+    let output_file_name = get_output_filename(project, Platform::MacOs, bitness);
     let output_path = project.get_release_path(build_settings);
     let mut final_output_path = project.get_release_path(build_settings);
     final_output_path.push(output_file_name);

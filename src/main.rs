@@ -207,26 +207,22 @@ fn main() {
                         &project,
                         &build_settings,
                         &version,
-                        &Bitness::X86,
+                        Bitness::X86,
                     );
                     stats_list.push(stats);
                     let stats = build::windows::create_exe(
                         &project,
                         &build_settings,
                         &version,
-                        &Bitness::X64,
+                        Bitness::X64,
                     );
                     stats_list.push(stats);
                 }
                 "macos" => {
                     let stats = build::create_love(&project, &build_settings);
                     stats_list.push(stats);
-                    let stats = build::macos::create_app(
-                        &project,
-                        &build_settings,
-                        &version,
-                        &Bitness::X64,
-                    );
+                    let stats =
+                        build::macos::create_app(&project, &build_settings, &version, Bitness::X64);
                     stats_list.push(stats);
                 }
                 _ => {}
