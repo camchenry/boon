@@ -3,7 +3,7 @@ function love.conf(t)
 
     t.modules.audio = false
     t.modules.data = false
-    t.modules.event = false
+    t.modules.event = true
     t.modules.font = false
     t.modules.graphics = false
     t.modules.image = false

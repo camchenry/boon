@@ -4,5 +4,5 @@ function love.load()
     fh:write(os)
     fh:flush()
     fh:close()
-    os.exit()
+    love.event.quit()
 end
