@@ -32,42 +32,16 @@ const APP_INFO: AppInfo = AppInfo {
     author: "boon",
 };
 
-const DEFAULT_CONFIG: &str = include_str!("../Boon.toml");
+const BOON_CONFIG_FILE_NAME: &str = "Boon.toml";
+const DEFAULT_CONFIG: &str = include_str!(concat!("../", "Boon.toml"));
 const LOVE_VERSIONS: &[&str] = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
 const DEFAULT_LOVE_VERSION: &str = LOVE_VERSIONS[0];
 const BUILD_TARGETS: &[&str] = &["love", "windows", "macos"];
 
 fn main() -> Result<()> {
-    // @TODO: Get values from local project config
     // load in config from Settings file
-    let mut settings = config::Config::new();
-    let default_config = config::File::from_str(DEFAULT_CONFIG, config::FileFormat::Toml);
-    settings
-        .merge(default_config)
-        .with_context(|| format!("Could not set default configuration `Boon.toml`"))?;
-
-    let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
-
-    if Path::new("Boon.toml").exists() {
-        // Add in `./Boon.toml`
-        settings
-            .merge(config::File::with_name("Boon.toml"))
-            .with_context(|| format!("Error while reading config file `Boon.toml`."))?;
-
-        let mut project_ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
-
-        if settings.get("build.exclude_default_ignore_list").unwrap() {
-            ignore_list = project_ignore_list;
-        } else {
-            ignore_list.append(&mut project_ignore_list);
-        }
-    }
-
-    let build_settings = BuildSettings {
-        ignore_list,
-        exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list").unwrap(),
-        output_directory: settings.get("build.output_directory").unwrap(),
-    };
+    let (settings, build_settings) =
+        get_settings().context("Could not load project settings or build settings")?;
 
     let subcmd_build = SubCommand::with_name("build")
         .about("Build game for a target platform")
@@ -122,9 +96,9 @@ fn main() -> Result<()> {
         .get_matches();
 
     match app_m.subcommand() {
-        ("init", Some(subcmd)) => init().context("Failed to initialize boon configuration file")?,
+        ("init", _) => init().context("Failed to initialize boon configuration file")?,
         ("build", Some(subcmd)) => {
-            build(&mut settings, &build_settings, subcmd).context("Failed to build project")?
+            build(&settings, &build_settings, subcmd).context("Failed to build project")?
         }
         ("love", Some(subcmd)) => {
             match subcmd.subcommand() {
@@ -156,6 +130,43 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Initializes the project settings and build settings.
+// @TODO: Get values from local project config
+fn get_settings() -> Result<(Config, BuildSettings)> {
+    let mut settings = config::Config::new();
+    let default_config = config::File::from_str(DEFAULT_CONFIG, config::FileFormat::Toml);
+    settings
+        .merge(default_config)
+        .context("Could not set default configuration `Boon.toml`")?;
+
+    let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
+    if Path::new(BOON_CONFIG_FILE_NAME).exists() {
+        // Add in `./Boon.toml`
+        settings
+            .merge(config::File::with_name(BOON_CONFIG_FILE_NAME))
+            .context(format!(
+                "Error while reading config file `{}`.",
+                BOON_CONFIG_FILE_NAME
+            ))?;
+
+        let mut project_ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
+
+        if settings.get("build.exclude_default_ignore_list").unwrap() {
+            ignore_list = project_ignore_list;
+        } else {
+            ignore_list.append(&mut project_ignore_list);
+        }
+    }
+
+    let build_settings = BuildSettings {
+        ignore_list,
+        exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list")?,
+        output_directory: settings.get("build.output_directory")?,
+    };
+
+    Ok((settings, build_settings))
 }
 
 /// `boon clean` command
@@ -255,7 +266,7 @@ fn init() -> Result<()> {
 }
 
 /// `boon build` command
-fn build(settings: &mut Config, build_settings: &BuildSettings, subcmd: &ArgMatches) -> Result<()> {
+fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches) -> Result<()> {
     let directory = subcmd
         .value_of("DIRECTORY")
         .context("Could not parse directory from command")?;
