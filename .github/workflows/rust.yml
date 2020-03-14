@@ -139,11 +139,11 @@ jobs:
           name: ${{ env.asset_name }}
       - name: Build test game
         run: |
-          Copy-Item -Path ${{ env.asset_name }}/${{ env.asset_name }}.zip -Destination ./${{ env.asset_name }}.zip
+          Copy-Item -Path "${{ env.asset_name }}/${{ env.asset_name }}.zip" -Destination "./${{ env.asset_name }}.zip"
           Expand-Archive -Path ${{ env.asset_name }}.zip
-          ./boon --version
-          ./boon love download ${{ matrix.love }}
-          ./boon build "./tests/game_build" --version ${{ matrix.love }}
+          & 'boon --version'
+          & 'boon love download ${{ matrix.love }}'
+          & 'boon build "./tests/game_build" --version ${{ matrix.love }}'
           Expand-Archive -LiteralPath "./release/My Game-win64.zip" -DestinationPath "./release"
           Start-Process -FilePath "./release/my_game.exe"
         shell: powershell
