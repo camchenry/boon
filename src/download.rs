@@ -10,7 +10,7 @@ use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::Write;
 
-pub fn download_love<'a>(version: LoveVersion, platform: Platform, bitness: Bitness) -> Result<()> {
+pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness) -> Result<()> {
     let file_info = get_love_download_location(version, platform, bitness);
 
     let mut output_file_path = app_dir(
@@ -28,12 +28,7 @@ pub fn download_love<'a>(version: LoveVersion, platform: Platform, bitness: Bitn
 
     // @TODO: Add integrity checking with hash
     if output_file_path.exists() {
-        println!(
-            "File already exists: {}",
-            output_file_path
-                .to_str()
-                .expect("Could not do string conversion")
-        );
+        println!("File already exists: {}", output_file_path.display());
     } else {
         println!("Downloading '{}'", file_info.url);
 
