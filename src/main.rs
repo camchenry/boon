@@ -137,9 +137,10 @@ fn main() -> Result<()> {
 fn get_settings() -> Result<(Config, BuildSettings)> {
     let mut settings = config::Config::new();
     let default_config = config::File::from_str(DEFAULT_CONFIG, config::FileFormat::Toml);
-    settings
-        .merge(default_config)
-        .context("Could not set default configuration `Boon.toml`")?;
+    settings.merge(default_config).context(format!(
+        "Could not set default configuration `{}`",
+        BOON_CONFIG_FILE_NAME
+    ))?;
 
     let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
     if Path::new(BOON_CONFIG_FILE_NAME).exists() {
@@ -253,13 +254,17 @@ fn love_download(love_subcmd: &ArgMatches) -> Result<()> {
 
 /// `boon init` command
 fn init() -> Result<()> {
-    if Path::new("Boon.toml").exists() {
+    if Path::new(BOON_CONFIG_FILE_NAME).exists() {
         println!("Project already initialized.");
     } else {
-        File::create("Boon.toml")
-            .with_context(|| format!("Failed to create config file `Boon.toml`."))?;
-        std::fs::write("Boon.toml", DEFAULT_CONFIG)
-            .with_context(|| format!("Failed to write default configuration to `Boon.toml`."))?;
+        File::create(BOON_CONFIG_FILE_NAME).context(format!(
+            "Failed to create config file `{}`.",
+            BOON_CONFIG_FILE_NAME
+        ))?;
+        std::fs::write(BOON_CONFIG_FILE_NAME, DEFAULT_CONFIG).context(format!(
+            "Failed to write default configuration to `{}`.",
+            BOON_CONFIG_FILE_NAME
+        ))?;
     }
 
     Ok(())
