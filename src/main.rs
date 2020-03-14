@@ -33,6 +33,9 @@ const APP_INFO: AppInfo = AppInfo {
 };
 
 const DEFAULT_CONFIG: &str = include_str!("../Boon.toml");
+const LOVE_VERSIONS: &[&str] = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
+const DEFAULT_LOVE_VERSION: &str = LOVE_VERSIONS[0];
+const BUILD_TARGETS: &[&str] = &["love", "windows", "macos"];
 
 fn main() -> Result<()> {
     // @TODO: Get values from local project config
@@ -66,24 +69,19 @@ fn main() -> Result<()> {
         output_directory: settings.get("build.output_directory").unwrap(),
     };
 
-    let targets = &["love", "windows", "macos"];
-
-    let default_love_version = "11.3";
-    let available_love_versions = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
-
     let subcmd_build = SubCommand::with_name("build")
         .about("Build game for a target platform")
         .arg(
             Arg::from_usage("-t, --target 'Specify which target platform to build for'")
                 .required(true)
-                .possible_values(targets)
+                .possible_values(BUILD_TARGETS)
                 .default_value("love"),
         )
         .arg(Arg::with_name("DIRECTORY").required(true).takes_value(true))
         .arg(
             Arg::from_usage("-v, --version 'Specify which target version of LÖVE to build for'")
-                .default_value(default_love_version)
-                .possible_values(available_love_versions),
+                .default_value(DEFAULT_LOVE_VERSION)
+                .possible_values(LOVE_VERSIONS),
         );
 
     let subcmd_love_download = SubCommand::with_name("download")
@@ -92,7 +90,7 @@ fn main() -> Result<()> {
             Arg::with_name("VERSION")
                 .required(true)
                 .takes_value(true)
-                .possible_values(available_love_versions),
+                .possible_values(LOVE_VERSIONS),
         );
 
     let subcmd_love_remove = SubCommand::with_name("remove")
@@ -101,7 +99,7 @@ fn main() -> Result<()> {
             Arg::with_name("VERSION")
                 .required(true)
                 .takes_value(true)
-                .possible_values(available_love_versions),
+                .possible_values(LOVE_VERSIONS),
         );
 
     let subcmd_love = SubCommand::with_name("love")
