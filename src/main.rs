@@ -241,9 +241,18 @@ fn love_download(love_subcmd: &ArgMatches) -> Result<()> {
         .parse::<LoveVersion>()
         .expect("Could not parse LoveVersion");
 
-    download::download_love(version, Platform::Windows, Bitness::X86);
-    download::download_love(version, Platform::Windows, Bitness::X64);
-    download::download_love(version, Platform::MacOs, Bitness::X64);
+    download::download_love(version, Platform::Windows, Bitness::X86).context(format!(
+        "Could not download LÖVE {} for Windows (32-bit)",
+        version.to_string()
+    ))?;
+    download::download_love(version, Platform::Windows, Bitness::X64).context(format!(
+        "Could not download LÖVE {} for Windows (64-bit)",
+        version.to_string()
+    ))?;
+    download::download_love(version, Platform::MacOs, Bitness::X64).context(format!(
+        "Could not download LÖVE {} for macOS",
+        version.to_string()
+    ))?;
 
     println!(
         "\nLÖVE {} is now available for building.",

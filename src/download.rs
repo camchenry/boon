@@ -6,10 +6,11 @@ use app_dirs::*;
 use crate::{Bitness, Platform};
 use reqwest;
 
+use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::Write;
 
-pub fn download_love<'a>(version: LoveVersion, platform: Platform, bitness: Bitness) {
+pub fn download_love<'a>(version: LoveVersion, platform: Platform, bitness: Bitness) -> Result<()> {
     let file_info = get_love_download_location(version, platform, bitness);
 
     let mut output_file_path = app_dir(
@@ -17,13 +18,16 @@ pub fn download_love<'a>(version: LoveVersion, platform: Platform, bitness: Bitn
         &APP_INFO,
         version.to_string().as_str(),
     )
-    .expect("Could not get app directory path");
+    .with_context(|| {
+        format!(
+            "Could not get app user data directory path for version `{}`",
+            version.to_string()
+        )
+    })?;
     output_file_path.push(file_info.filename);
 
-    let zip_exists: bool = output_file_path.exists();
-
     // @TODO: Add integrity checking with hash
-    if zip_exists {
+    if output_file_path.exists() {
         println!(
             "File already exists: {}",
             output_file_path
@@ -33,71 +37,36 @@ pub fn download_love<'a>(version: LoveVersion, platform: Platform, bitness: Bitn
     } else {
         println!("Downloading '{}'", file_info.url);
 
-        let mut resp = match reqwest::blocking::get(file_info.url) {
-            Ok(res) => match reqwest::blocking::get(res.url().as_str()) {
-                Ok(res) => res,
-                Err(why) => {
-                    eprintln!("Could not fetch '{}': {}", file_info.url, why);
-                    std::process::exit(1);
-                }
-            },
-            Err(why) => {
-                eprintln!("Could not fetch '{}': {}", file_info.url, why);
-                std::process::exit(1);
-            }
-        };
+        let mut resp = reqwest::blocking::get(file_info.url)
+            .with_context(|| format!("Could not fetch URL `{}`", file_info.url))?;
 
-        let file = match File::create(&output_file_path) {
-            Ok(file) => file,
-            Err(why) => {
-                eprintln!(
-                    "Unable to create file '{}': {}",
-                    output_file_path.display(),
-                    why
-                );
-                std::process::exit(1);
-            }
-        };
+        let file = File::create(&output_file_path)
+            .with_context(|| format!("Could not create file `{}`", output_file_path.display()))?;
 
         let mut writer = std::io::BufWriter::new(&file);
-        if resp.copy_to(&mut writer).is_err() {
-            eprintln!("Could not copy response to file");
-            std::process::exit(1);
-        }
-        match writer.flush() {
-            Ok(_) => {}
-            Err(why) => {
-                eprintln!(
-                    "Could not write file '{}': {}",
-                    output_file_path.display(),
-                    why
-                );
-                std::process::exit(1);
-            }
-        }
+        resp.copy_to(&mut writer).with_context(|| {
+            format!(
+                "Could not copy response from `{}` to file `{}`",
+                resp.url(),
+                output_file_path.display()
+            )
+        })?;
+        writer
+            .flush()
+            .with_context(|| format!("Could not write file `{}`", output_file_path.display()))?;
     }
 
     println!("Extracting '{}'", output_file_path.display());
     {
-        let file = match File::open(&output_file_path) {
-            Ok(file) => file,
-            Err(why) => {
-                eprintln!(
-                    "Unable to open file '{}': {}",
-                    output_file_path.display(),
-                    why
-                );
-                std::process::exit(1);
-            }
-        };
+        let file = File::open(&output_file_path)
+            .with_context(|| format!("Could not open file `{}`", output_file_path.display()))?;
 
-        let mut archive = match zip::ZipArchive::new(&file) {
-            Ok(archive) => archive,
-            Err(why) => {
-                eprintln!("{}", why);
-                std::process::exit(1);
-            }
-        };
+        let mut archive = zip::ZipArchive::new(&file).with_context(|| {
+            format!(
+                "Could not create zip archive `{}`",
+                output_file_path.display()
+            )
+        })?;
 
         for i in 0..archive.len() {
             let mut file = archive
@@ -107,11 +76,9 @@ pub fn download_love<'a>(version: LoveVersion, platform: Platform, bitness: Bitn
             outpath.pop();
             outpath.push(file.sanitized_name());
 
-            if (&*file.name()).ends_with('/') {
-                //println!("File {} extracted to \"{}\"", i, outpath.as_path().display());
+            if file.name().ends_with('/') {
                 std::fs::create_dir_all(&outpath).expect("Could not create output directory path");
             } else {
-                //println!("File {} extracted to \"{}\" ({} bytes)", i, outpath.as_path().display(), file.size());
                 if let Some(p) = outpath.parent() {
                     if !p.exists() {
                         std::fs::create_dir_all(&p)
@@ -135,6 +102,8 @@ pub fn download_love<'a>(version: LoveVersion, platform: Platform, bitness: Bitn
             }
         }
     }
+
+    Ok(())
 }
 
 fn get_love_download_location<'a>(
