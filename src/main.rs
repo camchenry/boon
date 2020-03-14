@@ -24,7 +24,6 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use config::Config;
 use remove_dir_all::*;
 use std::fs::File;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
