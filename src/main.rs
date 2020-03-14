@@ -10,7 +10,8 @@
     clippy::missing_docs_in_private_items,
     clippy::implicit_return,
     clippy::print_stdout,
-    clippy::module_name_repetitions
+    clippy::module_name_repetitions,
+    clippy::result_expect_used
 )]
 mod types;
 use crate::types::*;
@@ -35,7 +36,7 @@ const APP_INFO: AppInfo = AppInfo {
 const BOON_CONFIG_FILE_NAME: &str = "Boon.toml";
 const DEFAULT_CONFIG: &str = include_str!(concat!("../", "Boon.toml"));
 const LOVE_VERSIONS: &[&str] = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
-const DEFAULT_LOVE_VERSION: &str = LOVE_VERSIONS[0];
+const DEFAULT_LOVE_VERSION: &str = "11.3"; // Update with each new version
 const BUILD_TARGETS: &[&str] = &["love", "windows", "macos"];
 
 fn main() -> Result<()> {
@@ -121,7 +122,7 @@ fn main() -> Result<()> {
             }
         }
         ("clean", Some(_subcmd)) => {
-            clean(build_settings).context("Failed to clean release directory")?
+            clean(&build_settings).context("Failed to clean release directory")?
         }
         _ => {
             println!("No command supplied.");
@@ -171,7 +172,7 @@ fn get_settings() -> Result<(Config, BuildSettings)> {
 }
 
 /// `boon clean` command
-fn clean(build_settings: BuildSettings) -> Result<()> {
+fn clean(build_settings: &BuildSettings) -> Result<()> {
     // @TODO: Get top-level directory from git?
     let directory = ".";
     let mut release_dir_path = Path::new(directory)
