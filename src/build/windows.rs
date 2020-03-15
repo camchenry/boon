@@ -164,7 +164,7 @@ pub fn create_exe(
     remove_dir_all(&path)?;
 
     let build_metadata = std::fs::metadata(dst_file)
-        .with_context(|| format!("Failed to read file metadata for '{}'", dst_file.display()))?;
+        .with_context(|| format!("Failed to read file metadata for '{}'", dst_file))?;
 
     Ok(BuildStatistics {
         build_name: format!("Windows {}", bitness.to_string()),

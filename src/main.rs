@@ -23,6 +23,8 @@ use anyhow::{Context, Result};
 use app_dirs::*;
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use config::Config;
+use humansize::{file_size_opts, FileSize};
+use prettytable::{cell, row, Table};
 use remove_dir_all::*;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -338,38 +340,68 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
 
     match target {
         "love" => {
-            let stats = build::create_love(&project, build_settings)
-                .context("Failed to build .love file")?;
-            stats_list.push(stats);
+            stats_list.push(
+                build::create_love(&project, build_settings)
+                    .context("Failed to build .love file")?,
+            );
         }
         "windows" => {
-            let stats = build::create_love(&project, build_settings)
-                .context("Failed to build .love file")?;
-            stats_list.push(stats);
-            let stats = build::windows::create_exe(&project, build_settings, version, Bitness::X86)
-                .context("Failed to build for Windows 64-bit")?;
-            stats_list.push(stats);
-            let stats = build::windows::create_exe(&project, build_settings, version, Bitness::X64)
-                .context("Failed to build for Windows 32-bit")?;
-            stats_list.push(stats);
+            stats_list.push(
+                build::create_love(&project, build_settings)
+                    .context("Failed to build .love file")?,
+            );
+            stats_list.push(
+                build::windows::create_exe(&project, build_settings, version, Bitness::X86)
+                    .context("Failed to build for Windows 64-bit")?,
+            );
+            stats_list.push(
+                build::windows::create_exe(&project, build_settings, version, Bitness::X64)
+                    .context("Failed to build for Windows 32-bit")?,
+            );
         }
         "macos" => {
-            let stats = build::create_love(&project, build_settings)
-                .context("Failed to build .love file")?;
-            stats_list.push(stats);
-            let stats = build::macos::create_app(&project, build_settings, version, Bitness::X64)
-                .context("Failed to build for macOS")?;
-            stats_list.push(stats);
+            stats_list.push(
+                build::create_love(&project, build_settings)
+                    .context("Failed to build .love file")?,
+            );
+            stats_list.push(
+                build::macos::create_app(&project, build_settings, version, Bitness::X64)
+                    .context("Failed to build for macOS")?,
+            );
         }
         _ => {}
     }
 
     // Display build report
-    println!();
-    for stats in stats_list {
-        println!("{}", stats);
+    display_build_report(stats_list).context("Failed to display build report")?;
+
+    Ok(())
+}
+
+fn display_build_report(build_stats: Vec<BuildStatistics>) -> Result<()> {
+    let mut build_report_table = Table::new();
+    build_report_table.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    build_report_table.set_titles(row!["Build", "Time", "Size"]);
+
+    for stats in build_stats {
+        let time = if stats.build_time.as_millis() < 1000 {
+            format!("{:6} ms", stats.build_time.as_millis())
+        } else {
+            format!("{:6.2}  s", stats.build_time.as_secs_f64())
+        };
+        let size = stats
+            .build_size
+            .file_size(file_size_opts::CONVENTIONAL)
+            .expect("Could not format build file size");
+        build_report_table.add_row(row![
+            stats.build_name,
+            r->time, // Right aligned
+            r->size // Right aligned
+        ]);
     }
 
+    println!();
+    build_report_table.printstd();
     Ok(())
 }
 

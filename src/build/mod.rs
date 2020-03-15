@@ -158,7 +158,7 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> Result<
     )??;
 
     let build_metadata = std::fs::metadata(dst_file)
-        .with_context(|| format!("Failed to read file metadata for '{}'", dst_file.display()))?;
+        .with_context(|| format!("Failed to read file metadata for '{}'", dst_file))?;
 
     Ok(BuildStatistics {
         build_name: String::from("LÖVE"),

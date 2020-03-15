@@ -101,7 +101,7 @@ pub fn create_app(
 
     file.write_all(buffer.as_bytes())?;
 
-    let build_metadata = std::fs::metadata(final_output_path).with_context(|| {
+    let build_metadata = std::fs::metadata(&final_output_path).with_context(|| {
         format!(
             "Failed to read file metadata for '{}'",
             final_output_path.display()
