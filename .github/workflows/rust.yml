@@ -137,14 +137,20 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: ${{ env.asset_name }}
-      - name: Build test game
+      - name: Extract boon
         run: |
           Copy-Item -Path "${{ env.asset_name }}/${{ env.asset_name }}.zip" -Destination "./${{ env.asset_name }}.zip"
           Expand-Archive -Path "./${{ env.asset_name }}.zip" -DestinationPath "." -Force
           Get-ChildItem -Path "."
-          & 'boon.exe --version'
-          & 'boon.exe love download ${{ matrix.love }}'
-          & 'boon.exe build "./tests/game_build" --version ${{ matrix.love }}'
-          Expand-Archive -LiteralPath "./release/My Game-win64.zip" -DestinationPath "./release"
+        shell: powershell
+      - name: Build test game
+        run: |
+          boon --version
+          boon.exe love download ${{ matrix.love }}
+          boon.exe build "./tests/game_build" --version ${{ matrix.love }}
+        shell: cmd
+      - name: Run test game
+        run: |
+          Expand-Archive -LiteralPath "./release/My Game-win64.zip" -DestinationPath "./release" -Force
           Start-Process -FilePath "./release/my_game.exe"
         shell: powershell
