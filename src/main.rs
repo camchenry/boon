@@ -327,7 +327,12 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
             .context("Could not get project version")?,
     };
 
-    build::init(&project, build_settings);
+    build::init(&project, build_settings).with_context(|| {
+        format!(
+            "Failed to initialize the build process using build settings: {}",
+            build_settings
+        )
+    })?;
 
     let mut stats_list = Vec::new();
 

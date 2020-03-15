@@ -151,14 +151,14 @@ pub fn create_exe(
         .to_str()
         .context("Could not do string conversion")?;
 
-    let method = zip::CompressionMethod::Deflated;
-    let ignore_list: &Vec<String> = &vec![];
-    collect_zip_directory(src_dir, dst_file, method, ignore_list).with_context(|| {
-        format!(
-            "Error while zipping files from `{}` to `{}`",
-            src_dir, dst_file
-        )
-    })?;
+    collect_zip_directory(src_dir, dst_file, zip::CompressionMethod::Deflated, &[]).with_context(
+        || {
+            format!(
+                "Error while zipping files from `{}` to `{}`",
+                src_dir, dst_file
+            )
+        },
+    )??;
     let path = PathBuf::new().join(src_dir);
     println!("Removing {}", path.display());
     remove_dir_all(&path)?;

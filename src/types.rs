@@ -1,3 +1,4 @@
+#![allow(clippy::use_debug)]
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -120,5 +121,19 @@ impl Display for Platform {
             MacOs => "macOS",
         };
         write!(f, "{}", str)
+    }
+}
+
+impl Display for BuildSettings {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{{\n\
+            \toutput_directory: {}\n\
+            \texclude_default_ignore_list: {}\n\
+            \tignore_list: {:?}\n\
+            }}",
+            self.output_directory, self.exclude_default_ignore_list, self.ignore_list
+        )
     }
 }

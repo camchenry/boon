@@ -9,7 +9,9 @@
     clippy::non_ascii_literal,
     clippy::missing_docs_in_private_items,
     clippy::implicit_return,
-    clippy::print_stdout
+    clippy::print_stdout,
+    clippy::result_expect_used,
+    clippy::option_expect_used
 )]
 pub mod macos;
 pub mod windows;
@@ -141,7 +143,9 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> Result<
     let love_path = project
         .get_release_path(build_settings)
         .join(get_love_file_name(project));
-    let dst_file = love_path.to_str().expect("Could not do string conversion");
+    let dst_file = love_path
+        .to_str()
+        .context("Could not do string conversion")?;
     println!("Outputting LÖVE as {}", dst_file);
 
     collect_zip_directory(src_dir, dst_file, method, &build_settings.ignore_list).with_context(
@@ -151,7 +155,7 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> Result<
                 src_dir, dst_file
             )
         },
-    )?;
+    )??;
 
     Ok(BuildStatistics {
         build_name: String::from("LÖVE"),

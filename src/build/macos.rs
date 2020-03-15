@@ -1,3 +1,4 @@
+#![allow(clippy::result_expect_used)]
 use crate::build::*;
 use crate::types::*;
 use anyhow::{ensure, Result};
