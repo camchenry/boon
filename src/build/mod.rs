@@ -140,9 +140,10 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> Result<
     let method = zip::CompressionMethod::Deflated;
 
     let src_dir = &project.directory;
+    let output_file_name = get_love_file_name(project);
     let love_path = project
         .get_release_path(build_settings)
-        .join(get_love_file_name(project));
+        .join(&output_file_name);
     let dst_file = love_path
         .to_str()
         .context("Could not do string conversion")?;
@@ -161,9 +162,10 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> Result<
         .with_context(|| format!("Failed to read file metadata for '{}'", dst_file))?;
 
     Ok(BuildStatistics {
-        build_name: String::from("LÖVE"),
-        build_time: start.elapsed(),
-        build_size: build_metadata.len(),
+        name: String::from("LÖVE"),
+        file_name: output_file_name,
+        time: start.elapsed(),
+        size: build_metadata.len(),
     })
 }
 

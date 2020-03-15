@@ -57,22 +57,13 @@ pub struct LoveDownloadLocation {
 /// Stats about the build duration, size, etc.
 pub struct BuildStatistics {
     /// Name of the build, e.g. Windows, macOS, etc.
-    pub build_name: String,
+    pub name: String,
+    /// File name of the build output
+    pub file_name: String,
     /// Time it took to build
-    pub build_time: std::time::Duration,
+    pub time: std::time::Duration,
     /// The size of the final build in bytes
-    pub build_size: u64,
-}
-
-impl Display for BuildStatistics {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Built '{}' in {:.3}s",
-            self.build_name,
-            self.build_time.as_secs()
-        )
-    }
+    pub size: u64,
 }
 
 impl FromStr for LoveVersion {

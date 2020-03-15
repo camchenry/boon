@@ -381,20 +381,21 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
 fn display_build_report(build_stats: Vec<BuildStatistics>) -> Result<()> {
     let mut build_report_table = Table::new();
     build_report_table.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    build_report_table.set_titles(row!["Build", "Time", "Size"]);
+    build_report_table.set_titles(row!["Build", "File", "Time", "Size"]);
 
     for stats in build_stats {
-        let time = if stats.build_time.as_millis() < 1000 {
-            format!("{:6} ms", stats.build_time.as_millis())
+        let time = if stats.time.as_millis() < 1000 {
+            format!("{:6} ms", stats.time.as_millis())
         } else {
-            format!("{:6.2}  s", stats.build_time.as_secs_f64())
+            format!("{:6.2}  s", stats.time.as_secs_f64())
         };
         let size = stats
-            .build_size
+            .size
             .file_size(file_size_opts::CONVENTIONAL)
             .expect("Could not format build file size");
         build_report_table.add_row(row![
-            stats.build_name,
+            stats.name,
+            stats.file_name,
             r->time, // Right aligned
             r->size // Right aligned
         ]);

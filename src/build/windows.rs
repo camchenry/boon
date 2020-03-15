@@ -145,9 +145,9 @@ pub fn create_exe(
     let src_dir = output_path.clone();
     let src_dir = src_dir.to_str().context("Could not do string conversion")?;
 
-    let mut dst_file = output_path;
-    dst_file.set_extension("zip");
-    let dst_file = dst_file
+    let mut dst_file_path = output_path;
+    dst_file_path.set_extension("zip");
+    let dst_file = dst_file_path
         .to_str()
         .context("Could not do string conversion")?;
 
@@ -167,8 +167,15 @@ pub fn create_exe(
         .with_context(|| format!("Failed to read file metadata for '{}'", dst_file))?;
 
     Ok(BuildStatistics {
-        build_name: format!("Windows {}", bitness.to_string()),
-        build_time: start.elapsed(),
-        build_size: build_metadata.len(),
+        name: format!("Windows {}", bitness.to_string()),
+        // @TODO: There is probably a better way here
+        file_name: dst_file_path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string(),
+        time: start.elapsed(),
+        size: build_metadata.len(),
     })
 }

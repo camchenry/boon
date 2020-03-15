@@ -22,7 +22,7 @@ pub fn create_app(
     let output_file_name = get_output_filename(project, Platform::MacOs, bitness);
     let output_path = project.get_release_path(build_settings);
     let mut final_output_path = project.get_release_path(build_settings);
-    final_output_path.push(output_file_name);
+    final_output_path.push(&output_file_name);
 
     println!(
         "Copying LÖVE from {} to {}",
@@ -109,9 +109,10 @@ pub fn create_app(
     })?;
 
     Ok(BuildStatistics {
-        build_name: String::from("macOS"),
-        build_time: start.elapsed(),
-        build_size: build_metadata.len(),
+        name: String::from("macOS"),
+        file_name: output_file_name,
+        time: start.elapsed(),
+        size: build_metadata.len(),
     })
 }
 
