@@ -147,7 +147,7 @@ jobs:
         run: |
           boon --version
           boon.exe love download ${{ matrix.love }}
-          boon.exe build "./tests/game_build" --version ${{ matrix.love }}
+          boon.exe build "./tests/game_build" --target windows --version ${{ matrix.love }}
         shell: cmd
       - name: Run test game
         run: |
