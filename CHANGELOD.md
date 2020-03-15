@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unnecessary references (pointers) to small integers values have been removed, slightly improving performance.
 - Library dependencies have been updated, improving performance and fixing many issues.
 - Duplicate entries in the ignore list when merging default and project configuration, removing unneeded work on build.
+- Copy semantics for platform/bitness enums, which may have resolved some issues with cross-platform compatibility.
 
 ## [0.1.1] - 2020-02-11
 ### Fixed
