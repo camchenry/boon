@@ -1,3 +1,5 @@
+#![allow(clippy::use_debug)]
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
@@ -46,54 +48,89 @@ pub enum LoveVersion {
 }
 
 /// File info about remote download
-pub struct LoveDownloadLocation<'a> {
-    pub filename: &'a str,
-    pub url: &'a str,
+pub struct LoveDownloadLocation {
+    pub filename: String,
+    pub url: String,
 }
 
+#[derive(Debug, Clone)]
+/// Stats about the build duration, size, etc.
 pub struct BuildStatistics {
-    pub build_name: String,
-    pub build_time: std::time::Duration,
+    /// Name of the build, e.g. Windows, macOS, etc.
+    pub name: String,
+    /// File name of the build output
+    pub file_name: String,
+    /// Time it took to build
+    pub time: std::time::Duration,
+    /// The size of the final build in bytes
+    pub size: u64,
 }
 
 impl FromStr for LoveVersion {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use crate::types::LoveVersion::*;
+
         match s {
-            "11.3" => Ok(LoveVersion::V11_3),
-            "11.2" => Ok(LoveVersion::V11_2),
-            "11.1" => Ok(LoveVersion::V11_1),
-            "11.0" => Ok(LoveVersion::V11_0),
-            "11.0.0" => Ok(LoveVersion::V11_0),
-            "0.10.2" => Ok(LoveVersion::V0_10_2),
+            "11.3" => Ok(V11_3),
+            "11.2" => Ok(V11_2),
+            "11.1" => Ok(V11_1),
+            "11.0" | "11.0.0" => Ok(V11_0),
+            "0.10.2" => Ok(V0_10_2),
             _ => Err(()),
         }
     }
 }
 
-impl ToString for LoveVersion {
-    fn to_string(&self) -> String {
+impl Display for LoveVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use crate::types::LoveVersion::*;
 
-        match self {
-            &V11_3 => "11.3",
-            &V11_2 => "11.2",
-            &V11_1 => "11.1",
-            &V11_0 => "11.0",
-            &V0_10_2 => "0.10.2",
-        }
-        .to_string()
+        let str = match self {
+            V11_3 => "11.3",
+            V11_2 => "11.2",
+            V11_1 => "11.1",
+            V11_0 => "11.0",
+            V0_10_2 => "0.10.2",
+        };
+        write!(f, "{}", str)
     }
 }
 
-impl ToString for Bitness {
-    fn to_string(&self) -> String {
+impl Display for Bitness {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use crate::types::Bitness::*;
 
-        match self {
-            &X86 => "x86",
-            &X64 => "x64",
-        }
-        .to_string()
+        let str = match self {
+            X86 => "x86",
+            X64 => "x64",
+        };
+        write!(f, "{}", str)
+    }
+}
+
+impl Display for Platform {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use crate::types::Platform::*;
+
+        let str = match self {
+            Windows => "Windows",
+            MacOs => "macOS",
+        };
+        write!(f, "{}", str)
+    }
+}
+
+impl Display for BuildSettings {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{{\n\
+            \toutput_directory: {}\n\
+            \texclude_default_ignore_list: {}\n\
+            \tignore_list: {:?}\n\
+            }}",
+            self.output_directory, self.exclude_default_ignore_list, self.ignore_list
+        )
     }
 }

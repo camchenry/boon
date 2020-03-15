@@ -104,11 +104,11 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: ${{ env.asset_name }}
-    - name: Install LOVE (macOS)
+    - name: Install LOVE
       run: |
         brew cask install love
         love --version
-    - name: Build test game (macOS)
+    - name: Build test game
       run: |
         cp ${{ env.asset_name }}/${{ env.asset_name }}.zip ./${{ env.asset_name }}.zip
         unzip -o ${{ env.asset_name }}.zip
@@ -122,3 +122,33 @@ jobs:
         love "./tests/game_build/release/My Game.love"
         if ! grep -q "OS X" OK; then exit 1; fi
         rm OK
+  test-windows:
+    needs: build
+    runs-on: windows-latest
+    env:
+      artifact_name: boon
+      asset_name: boon-windows-amd64
+    strategy:
+      matrix:
+        love: [11.2, 11.3, 0.10.2]
+    steps:
+      - uses: actions/checkout@master
+      - name: Download latest boon
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{ env.asset_name }}
+      - name: Extract boon
+        run: |
+          Expand-Archive -Path "${{ env.asset_name }}/${{ env.asset_name }}.zip" -DestinationPath "." -Force
+        shell: powershell
+      - name: Build test game
+        run: |
+          boon --version
+          boon love download ${{ matrix.love }}
+          boon build "./tests/game_build" --target windows --version ${{ matrix.love }}
+        shell: cmd
+      - name: Run test game
+        run: |
+          Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "./tests/game_build/release" -Force
+          Start-Process -FilePath "./tests/game_build/release/my_game.exe"
+        shell: powershell

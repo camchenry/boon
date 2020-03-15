@@ -3,6 +3,7 @@ use crate::types::*;
 use glob::glob;
 use remove_dir_all::*;
 
+use anyhow::{anyhow, ensure, Context, Result};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -13,61 +14,51 @@ use std::path::PathBuf;
 pub fn create_exe(
     project: &Project,
     build_settings: &BuildSettings,
-    version: &LoveVersion,
-    bitness: &Bitness,
-) -> BuildStatistics {
+    version: LoveVersion,
+    bitness: Bitness,
+) -> Result<BuildStatistics> {
     // Stats
     let start = std::time::Instant::now();
 
-    let app_dir_path = get_love_version_path(version, &Platform::Windows, bitness);
+    let app_dir_path = get_love_version_path(version, Platform::Windows, bitness)?;
 
     let mut app_dir_path_clone = PathBuf::new();
     app_dir_path_clone.clone_from(&app_dir_path);
 
     let mut love_exe_path = app_dir_path;
     love_exe_path.push("love.exe");
-    if !love_exe_path.exists() {
-        eprintln!("\nlove.exe not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_exe_path.display(), version.to_string());
-        std::process::exit(1);
-    }
+    ensure!(love_exe_path.exists(), format!("love.exe not found at '{}'\nhint: You may need to download LÖVE first: `boon love download {}`", love_exe_path.display(), version.to_string()));
 
-    let exe_file_name = get_output_filename(project, &Platform::Windows, bitness);
-    let zip_output_file_name = &get_zip_output_filename(project, &Platform::Windows, bitness);
+    let exe_file_name = get_output_filename(project, Platform::Windows, bitness);
+    let zip_output_file_name = &get_zip_output_filename(project, Platform::Windows, bitness);
     let mut output_path = project.get_release_path(build_settings);
     output_path.push(zip_output_file_name);
 
-    println!("Removing existing directory {}", output_path.display());
     if output_path.exists() {
-        match std::fs::remove_dir_all(&output_path) {
-            Ok(_) => {}
-            Err(err) => {
-                eprintln!("Could not remove directory: '{}'", err);
-                std::process::exit(1);
-            }
-        };
+        println!("Removing existing directory {}", output_path.display());
+        std::fs::remove_dir_all(&output_path).with_context(|| {
+            format!(
+                "Could not remove output directory '{}'",
+                output_path.display()
+            )
+        })?;
     }
 
     // Create temp directory to be zipped and removed later
-    match std::fs::create_dir(&output_path) {
-        Ok(_) => {}
-        Err(err) => {
-            eprintln!("Could not create build directory: '{}'", err);
-            std::process::exit(1);
-        }
-    };
+    std::fs::create_dir(&output_path).with_context(|| {
+        format!(
+            "Could not create build directory '{}'",
+            output_path.display()
+        )
+    })?;
 
     output_path.push(exe_file_name);
 
     println!("Copying love from {}", love_exe_path.display());
 
     println!("Outputting exe to {}", output_path.display());
-    let mut output_file = match File::create(&output_path) {
-        Ok(file) => file,
-        Err(why) => {
-            eprintln!("Unable to create file `{}`: {}", output_path.display(), why);
-            std::process::exit(1);
-        }
-    };
+    let mut output_file = File::create(&output_path)
+        .with_context(|| format!("Could not create output file '{}'", output_path.display()))?;
 
     let love_file_name = get_love_file_name(project);
     let mut local_love_file_path = project.get_release_path(build_settings);
@@ -86,51 +77,50 @@ pub fn create_exe(
         app_dir_path_clone
             .join("*.dll")
             .to_str()
-            .expect("Could not convert string"),
-    )
-    .expect("Could not glob *.dll");
+            .context("Could not convert string")?,
+    )?;
     let txt_glob = glob(
         app_dir_path_clone
             .join("*.txt")
             .to_str()
-            .expect("Could not convert string"),
-    )
-    .expect("Could not glob *.txt");
+            .context("Could not convert string")?,
+    )?;
     let ico_glob = glob(
         app_dir_path_clone
             .join("*.ico")
             .to_str()
-            .expect("Could not convert string"),
-    )
-    .expect("Could not glob *.ico");
+            .context("Could not convert string")?,
+    )?;
     for entry in dll_glob.chain(txt_glob).chain(ico_glob) {
         match entry {
             Ok(path) => {
                 let local_file_name = path
                     .file_name()
-                    .expect("Could not get file name")
+                    .with_context(|| {
+                        format!("Could not get file name from path '{}'", path.display())
+                    })?
                     .to_str()
-                    .expect("Could not do string conversion");
+                    .context("Could not do string conversion")?;
 
-                match fs_extra::file::copy(
+                fs_extra::file::copy(
                     &path,
                     &project
                         .get_release_path(build_settings)
                         .join(zip_output_file_name)
                         .join(local_file_name),
                     &copy_options,
-                ) {
-                    Ok(_) => {}
-                    Err(err) => {
-                        eprintln!("{:?}", err);
-                        std::process::exit(1);
-                    }
-                };
+                )?;
             }
 
             // if the path matched but was unreadable,
             // thereby preventing its contents from matching
-            Err(e) => eprintln!("{:?}", e),
+            Err(e) => {
+                return Err(anyhow!(
+                    "Path matched for '{}' but file was unreadable: {}",
+                    e.path().display(),
+                    e.error()
+                ))
+            }
         }
     }
 
@@ -139,69 +129,53 @@ pub fn create_exe(
     let mut buffer = Vec::new();
     for path in paths {
         if path.is_file() {
-            let mut file = match File::open(path) {
-                Ok(file) => file,
-                Err(why) => {
-                    eprintln!("Could not open file: {}", why);
-                    std::process::exit(1);
-                }
-            };
-
-            match file.read_to_end(&mut buffer) {
-                Ok(_) => {}
-                Err(why) => {
-                    eprintln!("Could not read file: {}", why);
-                    std::process::exit(1);
-                }
-            };
-
-            match output_file.write_all(&*buffer) {
-                Ok(_) => {}
-                Err(why) => {
-                    eprintln!("Could not write output file: {}", why);
-                    std::process::exit(1);
-                }
-            };
-
+            let mut file = File::open(path)?;
+            file.read_to_end(&mut buffer)?;
+            output_file.write_all(&buffer)?;
             buffer.clear();
         }
     }
 
     // Time to zip up the whole directory
-    let zip_output_file_name = get_zip_output_filename(project, &Platform::Windows, bitness);
+    let zip_output_file_name = get_zip_output_filename(project, Platform::Windows, bitness);
     let output_path = project
         .get_release_path(build_settings)
         .join(zip_output_file_name);
 
     let src_dir = output_path.clone();
-    let src_dir = src_dir.to_str().expect("Could not do string conversion");
+    let src_dir = src_dir.to_str().context("Could not do string conversion")?;
 
-    let mut dst_file = output_path;
-    dst_file.set_extension("zip");
-    let dst_file = dst_file.to_str().expect("Could not do string conversion");
+    let mut dst_file_path = output_path;
+    dst_file_path.set_extension("zip");
+    let dst_file = dst_file_path
+        .to_str()
+        .context("Could not do string conversion")?;
 
-    let method = zip::CompressionMethod::Deflated;
-    let ignore_list: &Vec<String> = &vec![];
-    match collect_zip_directory(src_dir, dst_file, method, ignore_list) {
-        Ok(_) => {
-            println!("done: {} written to {}", src_dir, dst_file);
-        }
-        Err(e) => {
-            eprintln!("Error: {:?}", e);
-        }
-    }
+    collect_zip_directory(src_dir, dst_file, zip::CompressionMethod::Deflated, &[]).with_context(
+        || {
+            format!(
+                "Error while zipping files from `{}` to `{}`",
+                src_dir, dst_file
+            )
+        },
+    )??;
     let path = PathBuf::new().join(src_dir);
     println!("Removing {}", path.display());
-    match remove_dir_all(&path) {
-        Ok(_) => {}
-        Err(err) => {
-            eprintln!("{:?}", err);
-            std::process::exit(1);
-        }
-    };
+    remove_dir_all(&path)?;
 
-    BuildStatistics {
-        build_name: format!("Windows {}", bitness.to_string()),
-        build_time: start.elapsed(),
-    }
+    let build_metadata = std::fs::metadata(dst_file)
+        .with_context(|| format!("Failed to read file metadata for '{}'", dst_file))?;
+
+    Ok(BuildStatistics {
+        name: format!("Windows {}", bitness.to_string()),
+        // @TODO: There is probably a better way here
+        file_name: dst_file_path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string(),
+        time: start.elapsed(),
+        size: build_metadata.len(),
+    })
 }

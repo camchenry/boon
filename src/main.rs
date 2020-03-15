@@ -10,7 +10,8 @@
     clippy::missing_docs_in_private_items,
     clippy::implicit_return,
     clippy::print_stdout,
-    clippy::module_name_repetitions
+    clippy::module_name_repetitions,
+    clippy::result_expect_used
 )]
 mod types;
 use crate::types::*;
@@ -18,8 +19,12 @@ use crate::types::*;
 mod build;
 mod download;
 
+use anyhow::{Context, Result};
 use app_dirs::*;
-use clap::{crate_version, App, Arg, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use config::Config;
+use humansize::{file_size_opts, FileSize};
+use prettytable::{cell, row, Table};
 use remove_dir_all::*;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -30,65 +35,30 @@ const APP_INFO: AppInfo = AppInfo {
     author: "boon",
 };
 
-const DEFAULT_CONFIG: &str = include_str!("../Boon.toml");
+const BOON_CONFIG_FILE_NAME: &str = "Boon.toml";
+const DEFAULT_CONFIG: &str = include_str!(concat!("../", "Boon.toml"));
+const LOVE_VERSIONS: &[&str] = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
+const DEFAULT_LOVE_VERSION: &str = "11.3"; // Update with each new version
+const BUILD_TARGETS: &[&str] = &["love", "windows", "macos"];
 
-fn main() {
-    // @TODO: Get values from local project config
+fn main() -> Result<()> {
     // load in config from Settings file
-    let mut settings = config::Config::new();
-
-    let default_config = config::File::from_str(DEFAULT_CONFIG, config::FileFormat::Toml);
-
-    if settings.merge(default_config).is_err() {
-        eprintln!("Could not set default configuration.");
-        std::process::exit(1);
-    }
-
-    let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
-
-    if Path::new("Boon.toml").exists() {
-        // Add in `./Boon.toml`
-        match settings.merge(config::File::with_name("Boon.toml")) {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("Error reading config file: {}", e);
-                std::process::exit(1);
-            }
-        };
-
-        let mut project_ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
-
-        if settings.get("build.exclude_default_ignore_list").unwrap() {
-            ignore_list = project_ignore_list;
-        } else {
-            ignore_list.append(&mut project_ignore_list);
-        }
-    }
-
-    let build_settings = BuildSettings {
-        ignore_list,
-        exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list").unwrap(),
-        output_directory: settings.get("build.output_directory").unwrap(),
-    };
-
-    let targets = &["love", "windows", "macos"];
-
-    let default_love_version = "11.3";
-    let available_love_versions = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
+    let (settings, build_settings) =
+        get_settings().context("Could not load project settings or build settings")?;
 
     let subcmd_build = SubCommand::with_name("build")
         .about("Build game for a target platform")
         .arg(
             Arg::from_usage("-t, --target 'Specify which target platform to build for'")
                 .required(true)
-                .possible_values(targets)
+                .possible_values(BUILD_TARGETS)
                 .default_value("love"),
         )
         .arg(Arg::with_name("DIRECTORY").required(true).takes_value(true))
         .arg(
             Arg::from_usage("-v, --version 'Specify which target version of LÖVE to build for'")
-                .default_value(default_love_version)
-                .possible_values(available_love_versions),
+                .default_value(DEFAULT_LOVE_VERSION)
+                .possible_values(LOVE_VERSIONS),
         );
 
     let subcmd_love_download = SubCommand::with_name("download")
@@ -97,7 +67,7 @@ fn main() {
             Arg::with_name("VERSION")
                 .required(true)
                 .takes_value(true)
-                .possible_values(available_love_versions),
+                .possible_values(LOVE_VERSIONS),
         );
 
     let subcmd_love_remove = SubCommand::with_name("remove")
@@ -106,7 +76,7 @@ fn main() {
             Arg::with_name("VERSION")
                 .required(true)
                 .takes_value(true)
-                .possible_values(available_love_versions),
+                .possible_values(LOVE_VERSIONS),
         );
 
     let subcmd_love = SubCommand::with_name("love")
@@ -129,162 +99,22 @@ fn main() {
         .get_matches();
 
     match app_m.subcommand() {
-        ("init", Some(_subcmd)) => {
-            if Path::new("Boon.toml").exists() {
-                println!("Project already initialized.");
-            } else {
-                match File::create("Boon.toml") {
-                    Ok(_) => {
-                        std::fs::write("Boon.toml", DEFAULT_CONFIG)
-                            .expect("Unable to write config file");
-                    }
-                    Err(e) => {
-                        eprintln!("Error while creating configuration file: {}", e);
-                        std::process::exit(1);
-                    }
-                }
-            }
-        }
+        ("init", _) => init().context("Failed to initialize boon configuration file")?,
         ("build", Some(subcmd)) => {
-            let directory = subcmd
-                .value_of("DIRECTORY")
-                .expect("Could not parse directory from command");
-            let target = subcmd
-                .value_of("target")
-                .expect("Could not parse target from command");
-            let version = subcmd
-                .value_of("version")
-                .expect("Could not parse version string")
-                .parse::<LoveVersion>()
-                .expect("Could not parse LoveVersion");
-
-            println!(
-                "Building target `{}` from directory `{}`",
-                target, directory
-            );
-
-            let project = Project {
-                title: settings
-                    .get_str("project.title")
-                    .expect("Could not get project title"),
-                package_name: settings
-                    .get_str("project.package_name")
-                    .expect("Could not get project package name"),
-                directory: directory.to_string(),
-                uti: settings
-                    .get_str("project.uti")
-                    .expect("Could not get project UTI"),
-                authors: settings
-                    .get_str("project.authors")
-                    .expect("Could not get project authors"),
-                description: settings
-                    .get_str("project.description")
-                    .expect("Could not get project description"),
-                email: settings
-                    .get_str("project.email")
-                    .expect("Could not get project email"),
-                url: settings
-                    .get_str("project.url")
-                    .expect("Could not get project URL"),
-                version: settings
-                    .get_str("project.version")
-                    .expect("Could not get project version"),
-            };
-
-            build::init(&project, &build_settings);
-
-            let mut stats_list = Vec::new();
-
-            match target {
-                "love" => {
-                    let stats = build::create_love(&project, &build_settings);
-                    stats_list.push(stats);
-                }
-                "windows" => {
-                    let stats = build::create_love(&project, &build_settings);
-                    stats_list.push(stats);
-                    let stats = build::windows::create_exe(
-                        &project,
-                        &build_settings,
-                        &version,
-                        &Bitness::X86,
-                    );
-                    stats_list.push(stats);
-                    let stats = build::windows::create_exe(
-                        &project,
-                        &build_settings,
-                        &version,
-                        &Bitness::X64,
-                    );
-                    stats_list.push(stats);
-                }
-                "macos" => {
-                    let stats = build::create_love(&project, &build_settings);
-                    stats_list.push(stats);
-                    let stats = build::macos::create_app(
-                        &project,
-                        &build_settings,
-                        &version,
-                        &Bitness::X64,
-                    );
-                    stats_list.push(stats);
-                }
-                _ => {}
-            }
-
-            // Display build report
-            println!();
-            for stats in stats_list {
-                stats.display();
-            }
+            build(&settings, &build_settings, subcmd).context("Failed to build project")?
         }
         ("love", Some(subcmd)) => {
             match subcmd.subcommand() {
                 ("download", Some(love_subcmd)) => {
-                    let version = love_subcmd
-                        .value_of("VERSION")
-                        .expect("Could not parse version string")
-                        .parse::<LoveVersion>()
-                        .expect("Could not parse LoveVersion");
-
-                    download::download_love(&version, &Platform::Windows, &Bitness::X86);
-                    download::download_love(&version, &Platform::Windows, &Bitness::X64);
-                    download::download_love(&version, &Platform::MacOs, &Bitness::X64);
-
-                    println!(
-                        "\nLÖVE {} is now available for building.",
-                        version.to_string()
-                    )
+                    love_download(love_subcmd).context("Failed to download and install LÖVE")?
                 }
                 ("remove", Some(love_subcmd)) => {
-                    let version = love_subcmd
-                        .value_of("VERSION")
-                        .expect("Could not parse version string")
-                        .parse::<LoveVersion>()
-                        .expect("Could not parse LoveVersion")
-                        .to_string();
-
-                    let installed_versions = get_installed_love_versions();
-
-                    if installed_versions.contains(&version) {
-                        let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/")
-                            .expect("Could not get app directory path");
-                        let path = PathBuf::new().join(output_file_path).join(&version);
-                        match remove_dir_all(&path) {
-                            Ok(_) => {
-                                println!("Removed LÖVE version {}.", version);
-                            }
-                            Err(err) => {
-                                eprintln!("Could not remove {}: {}", path.display(), err);
-                            }
-                        };
-                    } else {
-                        println!("Version '{}' not installed", version);
-                    }
+                    love_remove(love_subcmd).context("Failed to remove LÖVE")?
                 }
                 _ => {
                     // List installed versions
-                    let installed_versions = get_installed_love_versions();
+                    let installed_versions = get_installed_love_versions()
+                        .context("Could not get installed LÖVE versions")?;
 
                     println!("Installed versions:");
                     for version in installed_versions {
@@ -294,36 +124,289 @@ fn main() {
             }
         }
         ("clean", Some(_subcmd)) => {
-            // @TODO: Get top-level directory from git?
-            let directory = ".";
-            let mut release_dir_path = Path::new(directory)
-                .canonicalize()
-                .expect("Could not get canonical directory path");
-            release_dir_path.push(build_settings.output_directory.as_str());
-
-            if release_dir_path.exists() {
-                println!("Cleaning {}", release_dir_path.display());
-
-                match remove_dir_all(&release_dir_path) {
-                    Ok(_) => {
-                        println!();
-                    }
-                    Err(err) => {
-                        eprintln!("Could not clean {}: {}", release_dir_path.display(), err);
-                    }
-                };
-            }
-
-            println!("Release directory cleaned.");
+            clean(&build_settings).context("Failed to clean release directory")?
         }
         _ => {
             println!("No command supplied.");
             println!("{}", app_m.usage());
         }
     }
+
+    Ok(())
 }
 
-fn get_installed_love_versions() -> Vec<String> {
+/// Initializes the project settings and build settings.
+// @TODO: Get values from local project config
+fn get_settings() -> Result<(Config, BuildSettings)> {
+    let mut settings = config::Config::new();
+    let default_config = config::File::from_str(DEFAULT_CONFIG, config::FileFormat::Toml);
+    settings.merge(default_config).context(format!(
+        "Could not set default configuration `{}`",
+        BOON_CONFIG_FILE_NAME
+    ))?;
+
+    let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
+    if Path::new(BOON_CONFIG_FILE_NAME).exists() {
+        // Add in `./Boon.toml`
+        settings
+            .merge(config::File::with_name(BOON_CONFIG_FILE_NAME))
+            .context(format!(
+                "Error while reading config file `{}`.",
+                BOON_CONFIG_FILE_NAME
+            ))?;
+
+        let mut project_ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
+
+        if settings.get("build.exclude_default_ignore_list").unwrap() {
+            ignore_list = project_ignore_list;
+        } else {
+            ignore_list.append(&mut project_ignore_list);
+        }
+    }
+
+    let build_settings = BuildSettings {
+        ignore_list,
+        exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list")?,
+        output_directory: settings.get("build.output_directory")?,
+    };
+
+    Ok((settings, build_settings))
+}
+
+/// `boon clean` command
+fn clean(build_settings: &BuildSettings) -> Result<()> {
+    // @TODO: Get top-level directory from git?
+    let directory = ".";
+    let mut release_dir_path = Path::new(directory)
+        .canonicalize()
+        .context("Could not get canonical directory path")?;
+    release_dir_path.push(build_settings.output_directory.as_str());
+
+    if release_dir_path.exists() {
+        println!("Cleaning {}", release_dir_path.display());
+        remove_dir_all(&release_dir_path).with_context(|| {
+            format!(
+                "Could not clean release directory `{}`",
+                release_dir_path.display()
+            )
+        })?;
+        println!(
+            "Release directory `{}` cleaned.",
+            release_dir_path.display()
+        );
+    } else {
+        println!(
+            "Could not find expected release directory at `{}`",
+            release_dir_path.display()
+        );
+    }
+
+    Ok(())
+}
+
+/// `boon love remove` subcommand
+fn love_remove(love_subcmd: &ArgMatches) -> Result<()> {
+    let version = love_subcmd
+        .value_of("VERSION")
+        .context("Could not parse version string")?
+        .parse::<LoveVersion>()
+        .expect("Could not parse LoveVersion")
+        .to_string();
+
+    let installed_versions =
+        get_installed_love_versions().context("Could not get installed LÖVE versions")?;
+
+    if installed_versions.contains(&version) {
+        let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/")
+            .context("Could not get app user data path")?;
+        let path = PathBuf::new().join(output_file_path).join(&version);
+        remove_dir_all(&path).with_context(|| {
+            format!(
+                "Could not remove installed version of LÖVE {} at path `{}`",
+                version,
+                path.display()
+            )
+        })?;
+        println!("Removed LÖVE version {}.", version);
+    } else {
+        println!("LÖVE version '{}' is not installed.", version);
+    }
+
+    Ok(())
+}
+
+/// `boon love download` subcommand
+fn love_download(love_subcmd: &ArgMatches) -> Result<()> {
+    let version = love_subcmd
+        .value_of("VERSION")
+        .context("Could not parse version string")?
+        .parse::<LoveVersion>()
+        .expect("Could not parse LoveVersion");
+
+    download::download_love(version, Platform::Windows, Bitness::X86).context(format!(
+        "Could not download LÖVE {} for Windows (32-bit)",
+        version.to_string()
+    ))?;
+    download::download_love(version, Platform::Windows, Bitness::X64).context(format!(
+        "Could not download LÖVE {} for Windows (64-bit)",
+        version.to_string()
+    ))?;
+    download::download_love(version, Platform::MacOs, Bitness::X64).context(format!(
+        "Could not download LÖVE {} for macOS",
+        version.to_string()
+    ))?;
+
+    println!(
+        "\nLÖVE {} is now available for building.",
+        version.to_string()
+    );
+
+    Ok(())
+}
+
+/// `boon init` command
+fn init() -> Result<()> {
+    if Path::new(BOON_CONFIG_FILE_NAME).exists() {
+        println!("Project already initialized.");
+    } else {
+        File::create(BOON_CONFIG_FILE_NAME).context(format!(
+            "Failed to create config file `{}`.",
+            BOON_CONFIG_FILE_NAME
+        ))?;
+        std::fs::write(BOON_CONFIG_FILE_NAME, DEFAULT_CONFIG).context(format!(
+            "Failed to write default configuration to `{}`.",
+            BOON_CONFIG_FILE_NAME
+        ))?;
+    }
+
+    Ok(())
+}
+
+/// `boon build` command
+fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches) -> Result<()> {
+    let directory = subcmd
+        .value_of("DIRECTORY")
+        .context("Could not parse directory from command")?;
+    let target = subcmd
+        .value_of("target")
+        .context("Could not parse target from command")?;
+    let version = subcmd
+        .value_of("version")
+        .context("Could not parse version string")?
+        .parse::<LoveVersion>()
+        .expect("Could not parse LoveVersion");
+
+    println!(
+        "Building target `{}` from directory `{}`",
+        target, directory
+    );
+
+    let project = Project {
+        title: settings
+            .get_str("project.title")
+            .context("Could not get project title")?,
+        package_name: settings
+            .get_str("project.package_name")
+            .context("Could not get project package name")?,
+        directory: directory.to_string(),
+        uti: settings
+            .get_str("project.uti")
+            .context("Could not get project UTI")?,
+        authors: settings
+            .get_str("project.authors")
+            .context("Could not get project authors")?,
+        description: settings
+            .get_str("project.description")
+            .context("Could not get project description")?,
+        email: settings
+            .get_str("project.email")
+            .context("Could not get project email")?,
+        url: settings
+            .get_str("project.url")
+            .context("Could not get project URL")?,
+        version: settings
+            .get_str("project.version")
+            .context("Could not get project version")?,
+    };
+
+    build::init(&project, build_settings).with_context(|| {
+        format!(
+            "Failed to initialize the build process using build settings: {}",
+            build_settings
+        )
+    })?;
+
+    let mut stats_list = Vec::new();
+
+    match target {
+        "love" => {
+            stats_list.push(
+                build::create_love(&project, build_settings)
+                    .context("Failed to build .love file")?,
+            );
+        }
+        "windows" => {
+            stats_list.push(
+                build::create_love(&project, build_settings)
+                    .context("Failed to build .love file")?,
+            );
+            stats_list.push(
+                build::windows::create_exe(&project, build_settings, version, Bitness::X86)
+                    .context("Failed to build for Windows 64-bit")?,
+            );
+            stats_list.push(
+                build::windows::create_exe(&project, build_settings, version, Bitness::X64)
+                    .context("Failed to build for Windows 32-bit")?,
+            );
+        }
+        "macos" => {
+            stats_list.push(
+                build::create_love(&project, build_settings)
+                    .context("Failed to build .love file")?,
+            );
+            stats_list.push(
+                build::macos::create_app(&project, build_settings, version, Bitness::X64)
+                    .context("Failed to build for macOS")?,
+            );
+        }
+        _ => {}
+    }
+
+    // Display build report
+    display_build_report(stats_list).context("Failed to display build report")?;
+
+    Ok(())
+}
+
+fn display_build_report(build_stats: Vec<BuildStatistics>) -> Result<()> {
+    let mut build_report_table = Table::new();
+    build_report_table.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    build_report_table.set_titles(row!["Build", "File", "Time", "Size"]);
+
+    for stats in build_stats {
+        let time = if stats.time.as_millis() < 1000 {
+            format!("{:6} ms", stats.time.as_millis())
+        } else {
+            format!("{:6.2}  s", stats.time.as_secs_f64())
+        };
+        let size = stats
+            .size
+            .file_size(file_size_opts::CONVENTIONAL)
+            .expect("Could not format build file size");
+        build_report_table.add_row(row![
+            stats.name,
+            stats.file_name,
+            r->time, // Right aligned
+            r->size // Right aligned
+        ]);
+    }
+
+    println!();
+    build_report_table.printstd();
+    Ok(())
+}
+
+fn get_installed_love_versions() -> Result<Vec<String>> {
     let mut installed_versions: Vec<String> = Vec::new();
     let output_file_path =
         app_dir(AppDataType::UserData, &APP_INFO, "/").expect("Could not get app directory path");
@@ -334,7 +417,7 @@ fn get_installed_love_versions() -> Vec<String> {
             let file_name = entry
                 .file_name()
                 .to_str()
-                .expect("Could not parse file name to str");
+                .with_context(|| format!("Could not parse file name `{:?}` to str", entry))?;
 
             // Exclude directories that do not parse to a love
             // version, just in case some bogus directories
@@ -345,5 +428,5 @@ fn get_installed_love_versions() -> Vec<String> {
         }
     }
 
-    installed_versions
+    Ok(installed_versions)
 }
