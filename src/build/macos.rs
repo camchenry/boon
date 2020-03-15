@@ -8,13 +8,13 @@ use std::io::{Read, Write};
 pub fn create_app(
     project: &Project,
     build_settings: &BuildSettings,
-    version: &LoveVersion,
+    version: LoveVersion,
     bitness: Bitness,
-) -> BuildStatistics {
+) -> Result<BuildStatistics> {
     // Stats
     let start = std::time::Instant::now();
 
-    let love_path = get_love_version_path(version, Platform::MacOs, bitness);
+    let love_path = get_love_version_path(version, Platform::MacOs, bitness)?;
     if !love_path.exists() {
         eprintln!("\nLÖVE not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_path.display(), version.to_string());
         std::process::exit(1);
@@ -173,8 +173,8 @@ pub fn create_app(
         }
     };
 
-    BuildStatistics {
+    Ok(BuildStatistics {
         build_name: format!("macOS {}", bitness.to_string()),
         build_time: start.elapsed(),
-    }
+    })
 }

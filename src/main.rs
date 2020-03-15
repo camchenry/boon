@@ -327,29 +327,33 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
             .context("Could not get project version")?,
     };
 
-    build::init(&project, &build_settings);
+    build::init(&project, build_settings);
 
     let mut stats_list = Vec::new();
 
     match target {
         "love" => {
-            let stats = build::create_love(&project, build_settings);
+            let stats = build::create_love(&project, build_settings)
+                .context("Failed to build .love file")?;
             stats_list.push(stats);
         }
         "windows" => {
-            let stats = build::create_love(&project, build_settings);
+            let stats = build::create_love(&project, build_settings)
+                .context("Failed to build .love file")?;
             stats_list.push(stats);
-            let stats =
-                build::windows::create_exe(&project, build_settings, &version, Bitness::X86);
+            let stats = build::windows::create_exe(&project, build_settings, version, Bitness::X86)
+                .context("Failed to build for Windows 64-bit")?;
             stats_list.push(stats);
-            let stats =
-                build::windows::create_exe(&project, build_settings, &version, Bitness::X64);
+            let stats = build::windows::create_exe(&project, build_settings, version, Bitness::X64)
+                .context("Failed to build for Windows 32-bit")?;
             stats_list.push(stats);
         }
         "macos" => {
-            let stats = build::create_love(&project, build_settings);
+            let stats = build::create_love(&project, build_settings)
+                .context("Failed to build .love file")?;
             stats_list.push(stats);
-            let stats = build::macos::create_app(&project, build_settings, &version, Bitness::X64);
+            let stats = build::macos::create_app(&project, build_settings, version, Bitness::X64)
+                .context("Failed to build for macOS")?;
             stats_list.push(stats);
         }
         _ => {}
@@ -358,7 +362,7 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
     // Display build report
     println!();
     for stats in stats_list {
-        stats.display();
+        println!("{}", stats);
     }
 
     Ok(())

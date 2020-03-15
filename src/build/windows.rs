@@ -3,6 +3,7 @@ use crate::types::*;
 use glob::glob;
 use remove_dir_all::*;
 
+use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -13,13 +14,13 @@ use std::path::PathBuf;
 pub fn create_exe(
     project: &Project,
     build_settings: &BuildSettings,
-    version: &LoveVersion,
+    version: LoveVersion,
     bitness: Bitness,
-) -> BuildStatistics {
+) -> Result<BuildStatistics> {
     // Stats
     let start = std::time::Instant::now();
 
-    let app_dir_path = get_love_version_path(version, Platform::Windows, bitness);
+    let app_dir_path = get_love_version_path(version, Platform::Windows, bitness)?;
 
     let mut app_dir_path_clone = PathBuf::new();
     app_dir_path_clone.clone_from(&app_dir_path);
@@ -200,8 +201,8 @@ pub fn create_exe(
         }
     };
 
-    BuildStatistics {
+    Ok(BuildStatistics {
         build_name: format!("Windows {}", bitness.to_string()),
         build_time: start.elapsed(),
-    }
+    })
 }

@@ -106,7 +106,7 @@ pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness)
     Ok(())
 }
 
-fn get_love_download_location<'a>(
+fn get_love_download_location(
     version: LoveVersion,
     platform: Platform,
     bitness: Bitness,

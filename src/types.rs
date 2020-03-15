@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Error, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
@@ -55,6 +55,17 @@ pub struct LoveDownloadLocation {
 pub struct BuildStatistics {
     pub build_name: String,
     pub build_time: std::time::Duration,
+}
+
+impl Display for BuildStatistics {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Built '{}' in {:.3}s",
+            self.build_name,
+            self.build_time.as_secs()
+        )
+    }
 }
 
 impl FromStr for LoveVersion {
