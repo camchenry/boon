@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
@@ -46,9 +47,9 @@ pub enum LoveVersion {
 }
 
 /// File info about remote download
-pub struct LoveDownloadLocation<'a> {
-    pub filename: &'a str,
-    pub url: &'a str,
+pub struct LoveDownloadLocation {
+    pub filename: String,
+    pub url: String,
 }
 
 pub struct BuildStatistics {
@@ -71,29 +72,41 @@ impl FromStr for LoveVersion {
     }
 }
 
-impl ToString for LoveVersion {
-    fn to_string(&self) -> String {
+impl Display for LoveVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use crate::types::LoveVersion::*;
 
-        match self {
+        let str = match self {
             &V11_3 => "11.3",
             &V11_2 => "11.2",
             &V11_1 => "11.1",
             &V11_0 => "11.0",
             &V0_10_2 => "0.10.2",
-        }
-        .to_string()
+        };
+        write!(f, "{}", str)
     }
 }
 
-impl ToString for Bitness {
-    fn to_string(&self) -> String {
+impl Display for Bitness {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use crate::types::Bitness::*;
 
-        match self {
+        let str = match self {
             &X86 => "x86",
             &X64 => "x64",
-        }
-        .to_string()
+        };
+        write!(f, "{}", str)
+    }
+}
+
+impl Display for Platform {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use crate::types::Platform::*;
+
+        let str = match self {
+            &Windows => "Windows",
+            &MacOs => "macOS",
+        };
+        write!(f, "{}", str)
     }
 }

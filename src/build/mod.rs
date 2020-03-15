@@ -25,7 +25,6 @@ use std::iter::Iterator;
 
 use std::fs::File;
 use std::path::{Path, PathBuf};
-
 use walkdir::{DirEntry, WalkDir};
 use zip::result::ZipError;
 use zip::write::FileOptions;
