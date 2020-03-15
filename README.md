@@ -16,7 +16,6 @@ Licensed under the MIT License.
     * 11.x
     * 0.10.2
 * No external dependencies
-* Deploy to multiple destinations (coming soon)
 
 # Getting started
 
@@ -33,6 +32,8 @@ If you're a **macOS** user, download the `boon-macos-amd64` file.
 If you're a **Linux** user, download the `boon-linux-amd64` file.
 
 ## Usage
+
+In general, if you need help figuring out how to use a command you can pass the `--help` option to see possible arguments, options, and subcommands. To get started and see the top-level commands and options, run `boon --help`.
 
 ### Initialization
 To start using boon with your project, it is recommended to first initialize it. This will create a `Boon.toml` file that will let you configure the settings for your project.
@@ -61,6 +62,8 @@ $ boon build .
 ```
 
 Without a target specified, this will build a `.love` file and put it in the `release` directory. This is shorthand for `boon build <dir> --target love`
+
+It is possible to build all targets simultaneously by passing `all` as the target, for example, `boon build . --target all`.
 
 #### Building for Windows
 
@@ -96,5 +99,5 @@ git clone git@github.com:camchenry/boon.git
 cd boon
 cargo build --release
 ./target/release/boon --version
-boon 0.1.0
+boon 0.2.0
 ```
