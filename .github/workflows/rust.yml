@@ -139,18 +139,16 @@ jobs:
           name: ${{ env.asset_name }}
       - name: Extract boon
         run: |
-          Copy-Item -Path "${{ env.asset_name }}/${{ env.asset_name }}.zip" -Destination "./${{ env.asset_name }}.zip"
-          Expand-Archive -Path "./${{ env.asset_name }}.zip" -DestinationPath "." -Force
-          Get-ChildItem -Path "."
+          Expand-Archive -Path "${{ env.asset_name }}/${{ env.asset_name }}.zip" -DestinationPath "." -Force
         shell: powershell
       - name: Build test game
         run: |
           boon --version
-          boon.exe love download ${{ matrix.love }}
-          boon.exe build "./tests/game_build" --target windows --version ${{ matrix.love }}
+          boon love download ${{ matrix.love }}
+          boon build "./tests/game_build" --target windows --version ${{ matrix.love }}
         shell: cmd
       - name: Run test game
         run: |
-          Expand-Archive -LiteralPath "./release/My Game-win64.zip" -DestinationPath "./release" -Force
-          Start-Process -FilePath "./release/my_game.exe"
+          Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "./tests_game_build/release" -Force
+          Start-Process -FilePath "./tests/game_build/release/my_game.exe"
         shell: powershell
