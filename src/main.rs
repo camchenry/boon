@@ -39,7 +39,7 @@ const BOON_CONFIG_FILE_NAME: &str = "Boon.toml";
 const DEFAULT_CONFIG: &str = include_str!(concat!("../", "Boon.toml"));
 const LOVE_VERSIONS: &[&str] = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
 const DEFAULT_LOVE_VERSION: &str = "11.3"; // Update with each new version
-const BUILD_TARGETS: &[&str] = &["love", "windows", "macos"];
+const BUILD_TARGETS: &[&str] = &["love", "windows", "macos", "all"];
 
 fn main() -> Result<()> {
     // load in config from Settings file
@@ -296,10 +296,16 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
         .parse::<LoveVersion>()
         .expect("Could not parse LoveVersion");
 
-    println!(
-        "Building target `{}` from directory `{}`",
-        target, directory
-    );
+    let is_build_all = target == "all";
+
+    if is_build_all {
+        println!("Building all targets from directory `{}`", directory);
+    } else {
+        println!(
+            "Building target `{}` from directory `{}`",
+            target, directory
+        );
+    }
 
     let project = Project {
         title: settings
@@ -338,43 +344,67 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
 
     let mut stats_list = Vec::new();
 
-    match target {
-        "love" => {
-            stats_list.push(
-                build::create_love(&project, build_settings)
-                    .context("Failed to build .love file")?,
-            );
+    if is_build_all {
+        build_love(build_settings, &project, &mut stats_list)?;
+        build_windows(build_settings, version, &project, &mut stats_list)?;
+        build_macos(build_settings, version, &project, &mut stats_list)?;
+    } else {
+        if target == "love" {
+            build_love(build_settings, &project, &mut stats_list)?;
         }
-        "windows" => {
-            stats_list.push(
-                build::create_love(&project, build_settings)
-                    .context("Failed to build .love file")?,
-            );
-            stats_list.push(
-                build::windows::create_exe(&project, build_settings, version, Bitness::X86)
-                    .context("Failed to build for Windows 64-bit")?,
-            );
-            stats_list.push(
-                build::windows::create_exe(&project, build_settings, version, Bitness::X64)
-                    .context("Failed to build for Windows 32-bit")?,
-            );
+        if target == "windows" {
+            build_love(build_settings, &project, &mut stats_list)?;
+            build_windows(build_settings, version, &project, &mut stats_list)?;
         }
-        "macos" => {
-            stats_list.push(
-                build::create_love(&project, build_settings)
-                    .context("Failed to build .love file")?,
-            );
-            stats_list.push(
-                build::macos::create_app(&project, build_settings, version, Bitness::X64)
-                    .context("Failed to build for macOS")?,
-            );
+        if target == "macos" {
+            build_love(build_settings, &project, &mut stats_list)?;
+            build_macos(build_settings, version, &project, &mut stats_list)?;
         }
-        _ => {}
     }
 
     // Display build report
     display_build_report(stats_list).context("Failed to display build report")?;
 
+    Ok(())
+}
+
+fn build_macos(
+    build_settings: &BuildSettings,
+    version: LoveVersion,
+    project: &Project,
+    stats_list: &mut Vec<BuildStatistics>,
+) -> Result<()> {
+    stats_list.push(
+        build::macos::create_app(project, build_settings, version, Bitness::X64)
+            .context("Failed to build for macOS")?,
+    );
+    Ok(())
+}
+
+fn build_windows(
+    build_settings: &BuildSettings,
+    version: LoveVersion,
+    project: &Project,
+    stats_list: &mut Vec<BuildStatistics>,
+) -> Result<()> {
+    stats_list.push(
+        build::windows::create_exe(project, build_settings, version, Bitness::X86)
+            .context("Failed to build for Windows 64-bit")?,
+    );
+    stats_list.push(
+        build::windows::create_exe(project, build_settings, version, Bitness::X64)
+            .context("Failed to build for Windows 32-bit")?,
+    );
+    Ok(())
+}
+
+fn build_love(
+    build_settings: &BuildSettings,
+    project: &Project,
+    stats_list: &mut Vec<BuildStatistics>,
+) -> Result<()> {
+    stats_list
+        .push(build::create_love(project, build_settings).context("Failed to build .love file")?);
     Ok(())
 }
 
