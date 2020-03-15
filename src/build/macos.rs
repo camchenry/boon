@@ -101,9 +101,17 @@ pub fn create_app(
 
     file.write_all(buffer.as_bytes())?;
 
+    let build_metadata = std::fs::metadata(final_output_path).with_context(|| {
+        format!(
+            "Failed to read file metadata for '{}'",
+            final_output_path.display()
+        )
+    })?;
+
     Ok(BuildStatistics {
-        build_name: format!("macOS {}", bitness.to_string()),
+        build_name: String::from("macOS"),
         build_time: start.elapsed(),
+        build_size: build_metadata.len(),
     })
 }
 

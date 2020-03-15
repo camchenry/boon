@@ -163,8 +163,12 @@ pub fn create_exe(
     println!("Removing {}", path.display());
     remove_dir_all(&path)?;
 
+    let build_metadata = std::fs::metadata(dst_file)
+        .with_context(|| format!("Failed to read file metadata for '{}'", dst_file.display()))?;
+
     Ok(BuildStatistics {
         build_name: format!("Windows {}", bitness.to_string()),
         build_time: start.elapsed(),
+        build_size: build_metadata.len(),
     })
 }

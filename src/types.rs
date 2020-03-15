@@ -53,9 +53,15 @@ pub struct LoveDownloadLocation {
     pub url: String,
 }
 
+#[derive(Debug, Clone)]
+/// Stats about the build duration, size, etc.
 pub struct BuildStatistics {
+    /// Name of the build, e.g. Windows, macOS, etc.
     pub build_name: String,
+    /// Time it took to build
     pub build_time: std::time::Duration,
+    /// The size of the final build in bytes
+    pub build_size: u64,
 }
 
 impl Display for BuildStatistics {
