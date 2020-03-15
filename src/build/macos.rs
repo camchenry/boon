@@ -1,5 +1,6 @@
 use crate::build::*;
 use crate::types::*;
+use anyhow::{ensure, Result};
 use std::io::{Read, Write};
 
 //
@@ -15,10 +16,7 @@ pub fn create_app(
     let start = std::time::Instant::now();
 
     let love_path = get_love_version_path(version, Platform::MacOs, bitness)?;
-    if !love_path.exists() {
-        eprintln!("\nLÖVE not found at '{}'\nYou may need to download LÖVE first: `boon love download {}`", love_path.display(), version.to_string());
-        std::process::exit(1);
-    }
+    ensure!(love_path.exists(), format!("LÖVE not found at '{}'\nhint: You may need to download LÖVE first: `boon love download {}`", love_path.display(), version.to_string()));
 
     let output_file_name = get_output_filename(project, Platform::MacOs, bitness);
     let output_path = project.get_release_path(build_settings);
@@ -33,32 +31,20 @@ pub fn create_app(
 
     let mut copy_options = fs_extra::dir::CopyOptions::new();
     copy_options.overwrite = true;
-    match fs_extra::dir::copy(&love_path, &output_path, &copy_options) {
-        Ok(_) => {}
-        Err(err) => {
-            eprintln!("{:?}", err);
-            std::process::exit(1);
-        }
-    };
+    fs_extra::dir::copy(&love_path, &output_path, &copy_options)?;
 
     let mut local_love_app_path = project.get_release_path(build_settings);
     local_love_app_path.push(
         love_path
             .file_name()
-            .expect("Could not get file name")
+            .context("Could not get file name")?
             .to_str()
-            .expect("Could not do string conversion"),
+            .context("Could not do string conversion")?,
     );
 
     if final_output_path.exists() {
-        println!("Removing {}", final_output_path.display());
-        match std::fs::remove_dir_all(&final_output_path) {
-            Ok(_) => {}
-            Err(err) => {
-                eprintln!("{:?}", err);
-                std::process::exit(1);
-            }
-        };
+        println!("Removing output path '{}'", final_output_path.display());
+        std::fs::remove_dir_all(&final_output_path)?;
     }
 
     println!(
@@ -66,13 +52,13 @@ pub fn create_app(
         local_love_app_path.display(),
         final_output_path.display()
     );
-    match std::fs::rename(&local_love_app_path, &final_output_path) {
-        Ok(_) => {}
-        Err(err) => {
-            eprintln!("{:?}", err);
-            std::process::exit(1);
-        }
-    };
+    std::fs::rename(&local_love_app_path, &final_output_path).with_context(|| {
+        format!(
+            "Failed to rename '{}' to '{}'",
+            local_love_app_path.display(),
+            final_output_path.display()
+        )
+    })?;
 
     let love_file_name = get_love_file_name(project);
     let mut local_love_file_path = project.get_release_path(build_settings);
@@ -89,13 +75,7 @@ pub fn create_app(
 
     let mut copy_options = fs_extra::file::CopyOptions::new();
     copy_options.overwrite = true;
-    match fs_extra::file::copy(local_love_file_path, resources_path, &copy_options) {
-        Ok(_) => {}
-        Err(err) => {
-            eprintln!("{:?}", err);
-            std::process::exit(1);
-        }
-    };
+    fs_extra::file::copy(local_love_file_path, resources_path, &copy_options)?;
 
     // Rewrite plist file
     let mut plist_path = PathBuf::from(&final_output_path);
@@ -104,25 +84,34 @@ pub fn create_app(
 
     println!("Rewriting {}", plist_path.display());
 
+    let mut file = std::fs::OpenOptions::new().read(true).open(&plist_path)?;
+
+    let buffer = rewrite_app_files(project, &mut file).with_context(|| {
+        format!(
+            "Could not rewrite macOS application info in '{}'",
+            plist_path.display()
+        )
+    })?;
+
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&plist_path)?;
+
+    file.write_all(buffer.as_bytes())?;
+
+    Ok(BuildStatistics {
+        build_name: format!("macOS {}", bitness.to_string()),
+        build_time: start.elapsed(),
+    })
+}
+
+/// Rewrites the macOS application files to contain the project's info
+fn rewrite_app_files(project: &Project, file: &mut File) -> Result<String> {
     let mut buffer = String::new();
-    let mut file = match std::fs::OpenOptions::new().read(true).open(&plist_path) {
-        Ok(file) => file,
-        Err(why) => {
-            eprintln!("Could not open file: {}", why);
-            std::process::exit(1);
-        }
-    };
-
-    match file.read_to_string(&mut buffer) {
-        Ok(_) => {}
-        Err(why) => {
-            eprintln!("Could not read file: {}", why);
-            std::process::exit(1);
-        }
-    };
-
+    file.read_to_string(&mut buffer)?;
     let re = regex::Regex::new("(CFBundleIdentifier.*\n\t<string>)(.*)(</string>)")
-        .expect("Could not create regex");
+        .context("Could not create regex")?;
     buffer = re
         .replace(buffer.as_str(), |caps: &regex::Captures| {
             [
@@ -133,9 +122,8 @@ pub fn create_app(
             .join("")
         })
         .to_string();
-
     let re = regex::Regex::new("(CFBundleName.*\n\t<string>)(.*)(</string>)")
-        .expect("Could not create regex");
+        .context("Could not create regex")?;
     buffer = re
         .replace(buffer.as_str(), |caps: &regex::Captures| {
             [
@@ -146,35 +134,10 @@ pub fn create_app(
             .join("")
         })
         .to_string();
-
     let re = regex::RegexBuilder::new("^\t<key>UTExportedTypeDeclarations.*(\n.*)+\t</array>\n")
         .multi_line(true)
         .build()
-        .expect("Could not build regex");
+        .context("Could not build regex")?;
     buffer = re.replace(buffer.as_str(), "").to_string();
-
-    let mut file = match std::fs::OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(&plist_path)
-    {
-        Ok(file) => file,
-        Err(why) => {
-            eprintln!("Could not open file: {}", why);
-            std::process::exit(1);
-        }
-    };
-
-    match file.write_all(buffer.as_bytes()) {
-        Ok(_) => {}
-        Err(why) => {
-            eprintln!("Could not write output file: {}", why);
-            std::process::exit(1);
-        }
-    };
-
-    Ok(BuildStatistics {
-        build_name: format!("macOS {}", bitness.to_string()),
-        build_time: start.elapsed(),
-    })
+    Ok(buffer)
 }

@@ -1,4 +1,4 @@
-use std::fmt::{Display, Error, Formatter};
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
@@ -71,13 +71,14 @@ impl Display for BuildStatistics {
 impl FromStr for LoveVersion {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use crate::types::LoveVersion::*;
+
         match s {
-            "11.3" => Ok(LoveVersion::V11_3),
-            "11.2" => Ok(LoveVersion::V11_2),
-            "11.1" => Ok(LoveVersion::V11_1),
-            "11.0" => Ok(LoveVersion::V11_0),
-            "11.0.0" => Ok(LoveVersion::V11_0),
-            "0.10.2" => Ok(LoveVersion::V0_10_2),
+            "11.3" => Ok(V11_3),
+            "11.2" => Ok(V11_2),
+            "11.1" => Ok(V11_1),
+            "11.0" | "11.0.0" => Ok(V11_0),
+            "0.10.2" => Ok(V0_10_2),
             _ => Err(()),
         }
     }
@@ -88,11 +89,11 @@ impl Display for LoveVersion {
         use crate::types::LoveVersion::*;
 
         let str = match self {
-            &V11_3 => "11.3",
-            &V11_2 => "11.2",
-            &V11_1 => "11.1",
-            &V11_0 => "11.0",
-            &V0_10_2 => "0.10.2",
+            V11_3 => "11.3",
+            V11_2 => "11.2",
+            V11_1 => "11.1",
+            V11_0 => "11.0",
+            V0_10_2 => "0.10.2",
         };
         write!(f, "{}", str)
     }
@@ -103,8 +104,8 @@ impl Display for Bitness {
         use crate::types::Bitness::*;
 
         let str = match self {
-            &X86 => "x86",
-            &X64 => "x64",
+            X86 => "x86",
+            X64 => "x64",
         };
         write!(f, "{}", str)
     }
@@ -115,8 +116,8 @@ impl Display for Platform {
         use crate::types::Platform::*;
 
         let str = match self {
-            &Windows => "Windows",
-            &MacOs => "macOS",
+            Windows => "Windows",
+            MacOs => "macOS",
         };
         write!(f, "{}", str)
     }
