@@ -149,6 +149,6 @@ jobs:
         shell: cmd
       - name: Run test game
         run: |
-          Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "./tests_game_build/release" -Force
+          Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "./tests/game_build/release" -Force
           Start-Process -FilePath "./tests/game_build/release/my_game.exe"
         shell: powershell
