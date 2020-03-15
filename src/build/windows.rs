@@ -4,6 +4,7 @@ use glob::glob;
 use remove_dir_all::*;
 
 use anyhow::{anyhow, ensure, Context, Result};
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -151,14 +152,18 @@ pub fn create_exe(
         .to_str()
         .context("Could not do string conversion")?;
 
-    collect_zip_directory(src_dir, dst_file, zip::CompressionMethod::Deflated, &[]).with_context(
-        || {
-            format!(
-                "Error while zipping files from `{}` to `{}`",
-                src_dir, dst_file
-            )
-        },
-    )??;
+    collect_zip_directory(
+        src_dir,
+        dst_file,
+        zip::CompressionMethod::Deflated,
+        &HashSet::new(),
+    )
+    .with_context(|| {
+        format!(
+            "Error while zipping files from `{}` to `{}`",
+            src_dir, dst_file
+        )
+    })??;
     let path = PathBuf::new().join(src_dir);
     println!("Removing {}", path.display());
     remove_dir_all(&path)?;

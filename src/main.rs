@@ -26,6 +26,7 @@ use config::Config;
 use humansize::{file_size_opts, FileSize};
 use prettytable::{cell, row, Table};
 use remove_dir_all::*;
+use std::collections::HashSet;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -145,7 +146,7 @@ fn get_settings() -> Result<(Config, BuildSettings)> {
         BOON_CONFIG_FILE_NAME
     ))?;
 
-    let mut ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
+    let mut ignore_list: HashSet<String> = settings.get("build.ignore_list").unwrap();
     if Path::new(BOON_CONFIG_FILE_NAME).exists() {
         // Add in `./Boon.toml`
         settings
@@ -155,12 +156,12 @@ fn get_settings() -> Result<(Config, BuildSettings)> {
                 BOON_CONFIG_FILE_NAME
             ))?;
 
-        let mut project_ignore_list: Vec<String> = settings.get("build.ignore_list").unwrap();
+        let project_ignore_list: HashSet<String> = settings.get("build.ignore_list").unwrap();
 
         if settings.get("build.exclude_default_ignore_list").unwrap() {
             ignore_list = project_ignore_list;
         } else {
-            ignore_list.append(&mut project_ignore_list);
+            ignore_list.extend(project_ignore_list);
         }
     }
 

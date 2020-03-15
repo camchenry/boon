@@ -1,11 +1,12 @@
 #![allow(clippy::use_debug)]
+use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
 pub struct BuildSettings {
     pub output_directory: String,
-    pub ignore_list: Vec<String>,
+    pub ignore_list: HashSet<String>,
     pub exclude_default_ignore_list: bool,
 }
 

@@ -26,6 +26,7 @@ use std::io::{Seek, Write};
 use std::iter::Iterator;
 
 use anyhow::{ensure, Context, Result};
+use std::collections::HashSet;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -169,7 +170,7 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> Result<
     })
 }
 
-fn should_exclude_file(file_name: &str, ignore_list: &[String]) -> bool {
+fn should_exclude_file(file_name: &str, ignore_list: &HashSet<String>) -> bool {
     for exclude_pattern in ignore_list {
         // @Performance @TODO: Could cache regex in a multi-build to
         // avoid recompiling the same patterns
@@ -187,7 +188,7 @@ fn zip_directory<T>(
     prefix: &str,
     writer: T,
     method: zip::CompressionMethod,
-    ignore_list: &[String],
+    ignore_list: &HashSet<String>,
 ) -> zip::result::ZipResult<()>
 where
     T: Write + Seek,
@@ -226,7 +227,7 @@ fn collect_zip_directory(
     src_dir: &str,
     dst_file: &str,
     method: zip::CompressionMethod,
-    ignore_list: &[String],
+    ignore_list: &HashSet<String>,
 ) -> Result<zip::result::ZipResult<()>> {
     if !Path::new(src_dir).is_dir() {
         return Err(anyhow::Error::from(ZipError::FileNotFound));
