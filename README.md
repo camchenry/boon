@@ -1,6 +1,6 @@
 # boon
 
-boon is a build and deploy tool for LÖVE. It makes it easy to package your game for multiple platforms, similar to [love-release](https://github.com/MisterDA/love-release). It is a single executable with no other dependecies. It can be used across multiple projects and makes automated building a breeze.
+boon is a build tool for LÖVE. It makes it easy to package your game for multiple platforms, similar to [love-release](https://github.com/MisterDA/love-release). It is a single executable with no other dependecies. It can be used across multiple projects and makes automated building a breeze.
 
 ![Rust](https://github.com/camchenry/boon/workflows/Rust/badge.svg)
 
