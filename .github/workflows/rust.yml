@@ -143,16 +143,17 @@ jobs:
         shell: powershell
       - name: Build test game
         run: |
-          boon --version
-          boon love download ${{ matrix.love }}
-          boon build "./tests/game_build" --target windows --version ${{ matrix.love }}
+          ./boon/boon.exe --version
+          ./boon/boon.exe love download ${{ matrix.love }}
+          ./boon/boon.exe build "./boon/tests/game_build" --target windows --version ${{ matrix.love }}
         shell: cmd
       - name: Run test game
         run: |
-          Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "./tests/game_build/release" -Force
-          Start-Process -FilePath "./tests/game_build/release/my_game.exe"
+          Expand-Archive -LiteralPath "./boon/tests/game_build/release/My Game-win64.zip" -DestinationPath "./boon/tests/game_build/release" -Force
+          Start-Process -FilePath "./boon/tests/game_build/release/my_game.exe"
           Get-Item .
-          Get-Item ./tests/game_build
-          Get-Item ./tests/game_build/release
+          Get-Item ./boon
+          Get-Item ./boon/tests/game_build
+          Get-Item ./boon/tests/game_build/release
           If ((Select-String -Pattern 'Windows' -CaseSensitive -Path OK) -eq $null) { Write-Error 'Failed to find test string' }
         shell: powershell
