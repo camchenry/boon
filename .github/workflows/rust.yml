@@ -143,9 +143,9 @@ jobs:
         shell: powershell
       - name: Build test game
         run: |
-          ./boon/boon.exe --version
-          ./boon/boon.exe love download ${{ matrix.love }}
-          ./boon/boon.exe build "./boon/tests/game_build" --target windows --version ${{ matrix.love }}
+          boon --version
+          boon love download ${{ matrix.love }}
+          boon build "./boon/tests/game_build" --target windows --version ${{ matrix.love }}
         shell: cmd
       - name: Run test game
         run: |
