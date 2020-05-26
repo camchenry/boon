@@ -149,14 +149,7 @@ jobs:
         shell: cmd
       - name: Run test game
         run: |
-          Get-Item .
-          Get-Item ./boon
-          Get-Item ./tests/game_build
-          Get-Item ./tests/game_build/release
-          Get-Item ./boon
-          Get-Item ./boon/tests/game_build
-          Get-Item ./boon/tests/game_build/release
-          Expand-Archive -LiteralPath "./boon/tests/game_build/release/My Game-win64.zip" -DestinationPath "." -Force
+          Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "." -Force
           Start-Process -FilePath "./my_game.exe"
           If ((Select-String -Pattern 'Windows' -CaseSensitive -Path OK) -eq $null) { Write-Error 'Failed to find test string' }
         shell: powershell
