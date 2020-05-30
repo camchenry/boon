@@ -21,15 +21,65 @@ mod download;
 
 use anyhow::{Context, Result};
 use app_dirs::*;
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use config::Config;
 use humansize::{file_size_opts, FileSize};
 use prettytable::{cell, row, Table};
-use remove_dir_all::*;
+use remove_dir_all::remove_dir_all;
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use structopt::StructOpt;
 use walkdir::WalkDir;
+
+#[derive(StructOpt, Debug)]
+#[structopt(
+    name = "boon",
+    author = "Cameron McHenry",
+    about = "boon: LÖVE2D build and deploy tool"
+)]
+enum BoonOpt {
+    #[structopt(about = "Build game for a target platform")]
+    Build {
+        #[structopt(
+            long,
+            short,
+            help="Specify which target platform to build for",
+            possible_values=&Target::variants()
+        )]
+        target: Target,
+        #[structopt(
+            long,
+            short,
+            help = "Specify which target version of LÖVE to build for",
+            possible_values=&LoveVersion::variants(),
+            default_value="11.3",
+        )]
+        version: LoveVersion,
+        directory: String,
+    },
+    #[structopt(about = "Remove built packages")]
+    Clean,
+    #[structopt(about = "Initialize configuration for project")]
+    Init,
+    #[structopt(about = "Manage multiple LÖVE versions")]
+    Love(LoveSubcommand),
+}
+
+#[derive(StructOpt, Debug)]
+enum LoveSubcommand {
+    #[structopt(about = "Download a version of LÖVE")]
+    Download {
+        #[structopt(possible_values=&LoveVersion::variants())]
+        version: LoveVersion,
+    },
+    #[structopt(about = "Remove a version of LÖVE")]
+    Remove {
+        #[structopt(possible_values=&LoveVersion::variants())]
+        version: LoveVersion,
+    },
+    #[structopt(about = "List installed LÖVE versions")]
+    List,
+}
 
 const APP_INFO: AppInfo = AppInfo {
     name: "boon",
@@ -38,81 +88,30 @@ const APP_INFO: AppInfo = AppInfo {
 
 const BOON_CONFIG_FILE_NAME: &str = "Boon.toml";
 const DEFAULT_CONFIG: &str = include_str!(concat!("../", "Boon.toml"));
-const LOVE_VERSIONS: &[&str] = &["11.3", "11.2", "11.1", "11.0", "0.10.2"];
-const DEFAULT_LOVE_VERSION: &str = "11.3"; // Update with each new version
-const BUILD_TARGETS: &[&str] = &["love", "windows", "macos", "all"];
 
 fn main() -> Result<()> {
     // load in config from Settings file
     let (settings, build_settings) =
         get_settings().context("Could not load project settings or build settings")?;
 
-    let subcmd_build = SubCommand::with_name("build")
-        .about("Build game for a target platform")
-        .arg(
-            Arg::from_usage("-t, --target 'Specify which target platform to build for'")
-                .required(true)
-                .possible_values(BUILD_TARGETS)
-                .default_value("love"),
-        )
-        .arg(Arg::with_name("DIRECTORY").required(true).takes_value(true))
-        .arg(
-            Arg::from_usage("-v, --version 'Specify which target version of LÖVE to build for'")
-                .default_value(DEFAULT_LOVE_VERSION)
-                .possible_values(LOVE_VERSIONS),
-        );
+    match BoonOpt::from_args() {
+        BoonOpt::Init => init().context("Failed to initialize boon configuration file")?,
 
-    let subcmd_love_download = SubCommand::with_name("download")
-        .about("Download a version of LÖVE")
-        .arg(
-            Arg::with_name("VERSION")
-                .required(true)
-                .takes_value(true)
-                .possible_values(LOVE_VERSIONS),
-        );
-
-    let subcmd_love_remove = SubCommand::with_name("remove")
-        .about("Remove a version of LÖVE")
-        .arg(
-            Arg::with_name("VERSION")
-                .required(true)
-                .takes_value(true)
-                .possible_values(LOVE_VERSIONS),
-        );
-
-    let subcmd_love = SubCommand::with_name("love")
-        .about("Manage multiple LÖVE versions")
-        .subcommand(subcmd_love_download)
-        .subcommand(subcmd_love_remove);
-
-    let subcmd_init = SubCommand::with_name("init").about("Initialize configuration for project");
-
-    let subcmd_clean = SubCommand::with_name("clean").about("Remove built packages");
-
-    let app_m = App::new("boon")
-        .version(crate_version!())
-        .author("Cameron McHenry")
-        .about("boon: LÖVE2D build and deploy tool")
-        .subcommand(subcmd_init)
-        .subcommand(subcmd_build)
-        .subcommand(subcmd_love)
-        .subcommand(subcmd_clean)
-        .get_matches();
-
-    match app_m.subcommand() {
-        ("init", _) => init().context("Failed to initialize boon configuration file")?,
-        ("build", Some(subcmd)) => {
-            build(&settings, &build_settings, subcmd).context("Failed to build project")?
-        }
-        ("love", Some(subcmd)) => {
-            match subcmd.subcommand() {
-                ("download", Some(love_subcmd)) => {
-                    love_download(love_subcmd).context("Failed to download and install LÖVE")?
+        BoonOpt::Build {
+            target,
+            version,
+            directory,
+        } => build(&settings, &build_settings, target, version, directory)
+            .context("Failed to build project")?,
+        BoonOpt::Love(subcmd) => {
+            match subcmd {
+                LoveSubcommand::Download { version } => {
+                    love_download(version).context("Failed to download and install LÖVE")?
                 }
-                ("remove", Some(love_subcmd)) => {
-                    love_remove(love_subcmd).context("Failed to remove LÖVE")?
+                LoveSubcommand::Remove { version } => {
+                    love_remove(version).context("Failed to remove LÖVE")?
                 }
-                _ => {
+                LoveSubcommand::List => {
                     // List installed versions
                     let installed_versions = get_installed_love_versions()
                         .context("Could not get installed LÖVE versions")?;
@@ -124,13 +123,7 @@ fn main() -> Result<()> {
                 }
             }
         }
-        ("clean", Some(_subcmd)) => {
-            clean(&build_settings).context("Failed to clean release directory")?
-        }
-        _ => {
-            println!("No command supplied.");
-            println!("{}", app_m.usage());
-        }
+        BoonOpt::Clean => clean(&build_settings).context("Failed to clean release directory")?,
     }
 
     Ok(())
@@ -206,14 +199,8 @@ fn clean(build_settings: &BuildSettings) -> Result<()> {
 }
 
 /// `boon love remove` subcommand
-fn love_remove(love_subcmd: &ArgMatches) -> Result<()> {
-    let version = love_subcmd
-        .value_of("VERSION")
-        .context("Could not parse version string")?
-        .parse::<LoveVersion>()
-        .expect("Could not parse LoveVersion")
-        .to_string();
-
+fn love_remove(version: LoveVersion) -> Result<()> {
+    let version = version.to_string();
     let installed_versions =
         get_installed_love_versions().context("Could not get installed LÖVE versions")?;
 
@@ -237,13 +224,7 @@ fn love_remove(love_subcmd: &ArgMatches) -> Result<()> {
 }
 
 /// `boon love download` subcommand
-fn love_download(love_subcmd: &ArgMatches) -> Result<()> {
-    let version = love_subcmd
-        .value_of("VERSION")
-        .context("Could not parse version string")?
-        .parse::<LoveVersion>()
-        .expect("Could not parse LoveVersion");
-
+fn love_download(version: LoveVersion) -> Result<()> {
     download::download_love(version, Platform::Windows, Bitness::X86).context(format!(
         "Could not download LÖVE {} for Windows (32-bit)",
         version.to_string()
@@ -284,22 +265,14 @@ fn init() -> Result<()> {
 }
 
 /// `boon build` command
-fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches) -> Result<()> {
-    let directory = subcmd
-        .value_of("DIRECTORY")
-        .context("Could not parse directory from command")?;
-    let target = subcmd
-        .value_of("target")
-        .context("Could not parse target from command")?;
-    let version = subcmd
-        .value_of("version")
-        .context("Could not parse version string")?
-        .parse::<LoveVersion>()
-        .expect("Could not parse LoveVersion");
-
-    let is_build_all = target == "all";
-
-    if is_build_all {
+fn build(
+    settings: &Config,
+    build_settings: &BuildSettings,
+    target: Target,
+    version: LoveVersion,
+    directory: String,
+) -> Result<()> {
+    if target == Target::all {
         println!("Building all targets from directory `{}`", directory);
     } else {
         println!(
@@ -315,7 +288,7 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
         package_name: settings
             .get_str("project.package_name")
             .context("Could not get project package name")?,
-        directory: directory.to_string(),
+        directory,
         uti: settings
             .get_str("project.uti")
             .context("Could not get project UTI")?,
@@ -345,22 +318,14 @@ fn build(settings: &Config, build_settings: &BuildSettings, subcmd: &ArgMatches)
 
     let mut stats_list = Vec::new();
 
-    if is_build_all {
-        build_love(build_settings, &project, &mut stats_list)?;
+    build_love(build_settings, &project, &mut stats_list)?;
+
+    if target == Target::windows || target == Target::all {
         build_windows(build_settings, version, &project, &mut stats_list)?;
+    }
+
+    if target == Target::macos || target == Target::all {
         build_macos(build_settings, version, &project, &mut stats_list)?;
-    } else {
-        if target == "love" {
-            build_love(build_settings, &project, &mut stats_list)?;
-        }
-        if target == "windows" {
-            build_love(build_settings, &project, &mut stats_list)?;
-            build_windows(build_settings, version, &project, &mut stats_list)?;
-        }
-        if target == "macos" {
-            build_love(build_settings, &project, &mut stats_list)?;
-            build_macos(build_settings, version, &project, &mut stats_list)?;
-        }
     }
 
     // Display build report
