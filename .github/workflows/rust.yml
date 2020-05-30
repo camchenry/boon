@@ -151,6 +151,8 @@ jobs:
         run: |
           Tree . /F
           Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "." -Force
+          Tree . /F
           Start-Process -FilePath "./my_game.exe"
+          Tree . /F
           If ((Select-String -Pattern 'Windows' -CaseSensitive -Path OK) -eq $null) { Write-Error 'Failed to find test string' }
         shell: powershell
