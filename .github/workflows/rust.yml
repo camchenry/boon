@@ -1,6 +1,6 @@
 name: Rust
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -149,6 +149,8 @@ jobs:
         shell: cmd
       - name: Run test game
         run: |
-          Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "./tests/game_build/release" -Force
-          Start-Process -FilePath "./tests/game_build/release/my_game.exe"
+          Expand-Archive -LiteralPath "./tests/game_build/release/My Game-win64.zip" -DestinationPath "." -Force
+          Start-Process -FilePath "./my_game.exe"
+          Start-Sleep -Seconds 2
+          If ((Select-String -Pattern 'Windows' -CaseSensitive -Path OK) -eq $null) { Write-Error 'Failed to find test string' }
         shell: powershell

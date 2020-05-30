@@ -92,7 +92,7 @@ dependencies = [
 
 [[package]]
 name = "boon"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "app_dirs 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
