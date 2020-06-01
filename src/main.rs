@@ -44,7 +44,8 @@ enum BoonOpt {
             long,
             short,
             help="Specify which target platform to build for",
-            possible_values=&Target::variants()
+            possible_values=&Target::variants(),
+            default_value="love"
         )]
         target: Target,
         #[structopt(
