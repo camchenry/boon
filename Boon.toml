@@ -62,6 +62,10 @@ ignore_list = [
     "release",
 ]
 
+# List of targets to build for
+# Possible values: "love", "windows", "macos", "all"
+targets = ["love"]
+
 # If this is set to true, then the default ignore list will not be
 # merged with the project specific ignore list. This allows the
 # ignore list to be completely overwritten.
