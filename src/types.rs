@@ -11,6 +11,7 @@ pub struct BuildSettings {
     pub output_directory: String,
     pub ignore_list: HashSet<String>,
     pub exclude_default_ignore_list: bool,
+    pub targets: Vec<Target>,
 }
 
 #[derive(Debug, Clone)]

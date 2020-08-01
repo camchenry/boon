@@ -19,7 +19,7 @@ use crate::types::*;
 mod build;
 mod download;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use app_dirs::*;
 use config::Config;
 use humansize::{file_size_opts, FileSize};
@@ -159,10 +159,25 @@ fn get_settings() -> Result<(Config, BuildSettings)> {
         }
     }
 
+    let hash_targets: HashSet<String> = settings.get("build.targets").unwrap();
+    let mut targets: Vec<Target> = Vec::new();
+    for target in hash_targets.iter() {
+        targets.push(
+            match target.as_str() {
+                "love" => Target::love,
+                "windows" => Target::windows,
+                "macos" => Target::macos,
+                "all" => Target::all,
+                _ => bail!("{} is not a valid build target.", target),
+            }
+        )
+    }
+
     let build_settings = BuildSettings {
         ignore_list,
         exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list")?,
         output_directory: settings.get("build.output_directory")?,
+        targets,
     };
 
     Ok((settings, build_settings))
@@ -273,12 +288,18 @@ fn build(
     version: LoveVersion,
     directory: String,
 ) -> Result<()> {
-    if target == Target::all {
+    let mut targets = &build_settings.targets;
+    let cmd_target = vec![target];
+    if target != Target::love {
+        targets = &cmd_target;
+    }
+
+    if targets.contains(&Target::all) {
         println!("Building all targets from directory `{}`", directory);
     } else {
         println!(
-            "Building target `{}` from directory `{}`",
-            target, directory
+            "Building targets `{:?}` from directory `{}`",
+            targets, directory
         );
     }
 
@@ -321,11 +342,11 @@ fn build(
 
     build_love(build_settings, &project, &mut stats_list)?;
 
-    if target == Target::windows || target == Target::all {
+    if targets.contains(&Target::windows) || targets.contains(&Target::all) {
         build_windows(build_settings, version, &project, &mut stats_list)?;
     }
 
-    if target == Target::macos || target == Target::all {
+    if targets.contains(&Target::macos) || targets.contains(&Target::all) {
         build_macos(build_settings, version, &project, &mut stats_list)?;
     }
 
