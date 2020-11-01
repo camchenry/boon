@@ -111,27 +111,27 @@ fn get_love_download_location(
     platform: Platform,
     bitness: Bitness,
 ) -> Result<LoveDownloadLocation> {
-    let release_location = "https://bitbucket.org/rude/love/downloads";
-    let release_file_name = match (version, platform, bitness) {
-        (LoveVersion::V11_3, Platform::Windows, Bitness::X64) => "love-11.3-win64.zip",
-        (LoveVersion::V11_3, Platform::Windows, Bitness::X86) => "love-11.3-win32.zip",
-        (LoveVersion::V11_3, Platform::MacOs, Bitness::X64) => "love-11.3-macos.zip",
+    let release_location = "https://github.com/love2d/love/releases/download";
+    let (version_string, release_file_name) = match (version, platform, bitness) {
+        (LoveVersion::V11_3, Platform::Windows, Bitness::X64) => ("11.3", "love-11.3-win64.zip"),
+        (LoveVersion::V11_3, Platform::Windows, Bitness::X86) => ("11.3", "love-11.3-win32.zip"),
+        (LoveVersion::V11_3, Platform::MacOs, Bitness::X64) => ("11.3", "love-11.3-macos.zip"),
 
-        (LoveVersion::V11_2, Platform::Windows, Bitness::X64) => "love-11.2-win64.zip",
-        (LoveVersion::V11_2, Platform::Windows, Bitness::X86) => "love-11.2-win32.zip",
-        (LoveVersion::V11_2, Platform::MacOs, Bitness::X64) => "love-11.2-macos.zip",
+        (LoveVersion::V11_2, Platform::Windows, Bitness::X64) => ("11.2", "love-11.2-win64.zip"),
+        (LoveVersion::V11_2, Platform::Windows, Bitness::X86) => ("11.2", "love-11.2-win32.zip"),
+        (LoveVersion::V11_2, Platform::MacOs, Bitness::X64) => ("11.2", "love-11.2-macos.zip"),
 
-        (LoveVersion::V11_1, Platform::Windows, Bitness::X64) => "love-11.1-win64.zip",
-        (LoveVersion::V11_1, Platform::Windows, Bitness::X86) => "love-11.1-win32.zip",
-        (LoveVersion::V11_1, Platform::MacOs, Bitness::X64) => "love-11.1-macos.zip",
+        (LoveVersion::V11_1, Platform::Windows, Bitness::X64) => ("11.1", "love-11.1-win64.zip"),
+        (LoveVersion::V11_1, Platform::Windows, Bitness::X86) => ("11.1", "love-11.1-win32.zip"),
+        (LoveVersion::V11_1, Platform::MacOs, Bitness::X64) => ("11.1", "love-11.1-macos.zip"),
 
-        (LoveVersion::V11_0, Platform::Windows, Bitness::X64) => "love-11.0.0-win64.zip",
-        (LoveVersion::V11_0, Platform::Windows, Bitness::X86) => "love-11.0.0-win32.zip",
-        (LoveVersion::V11_0, Platform::MacOs, Bitness::X64) => "love-11.0.0-macos.zip",
+        (LoveVersion::V11_0, Platform::Windows, Bitness::X64) => ("11.0", "love-11.0.0-win64.zip"),
+        (LoveVersion::V11_0, Platform::Windows, Bitness::X86) => ("11.0", "love-11.0.0-win32.zip"),
+        (LoveVersion::V11_0, Platform::MacOs, Bitness::X64) => ("11.0", "love-11.0.0-macos.zip"),
 
-        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X64) => "love-0.10.2-win64.zip",
-        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X86) => "love-0.10.2-win32.zip",
-        (LoveVersion::V0_10_2, Platform::MacOs, Bitness::X64) => "love-0.10.2-macosx-x64.zip",
+        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X64) => ("10.2", "love-0.10.2-win64.zip"),
+        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X86) => ("10.2", "love-0.10.2-win32.zip"),
+        (LoveVersion::V0_10_2, Platform::MacOs, Bitness::X64) => ("10.2", "love-0.10.2-macosx-x64.zip"),
         _ => {
             bail!(
                 "Unsupported platform {}-{} for version {}",
@@ -140,12 +140,11 @@ fn get_love_download_location(
                 version
             );
         }
-    }
-    .to_string();
+    };
 
-    let url = format!("{}/{}", release_location, release_file_name);
+    let url = format!("{}/{}/{}", release_location, version_string, release_file_name);
     Ok(LoveDownloadLocation {
-        filename: release_file_name,
+        filename: release_file_name.to_string(),
         url,
     })
 }
