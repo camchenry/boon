@@ -129,9 +129,9 @@ fn get_love_download_location(
         (LoveVersion::V11_0, Platform::Windows, Bitness::X86) => ("11.0", "love-11.0.0-win32.zip"),
         (LoveVersion::V11_0, Platform::MacOs, Bitness::X64) => ("11.0", "love-11.0.0-macos.zip"),
 
-        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X64) => ("10.2", "love-0.10.2-win64.zip"),
-        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X86) => ("10.2", "love-0.10.2-win32.zip"),
-        (LoveVersion::V0_10_2, Platform::MacOs, Bitness::X64) => ("10.2", "love-0.10.2-macosx-x64.zip"),
+        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X64) => ("0.10.2", "love-0.10.2-win64.zip"),
+        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X86) => ("0.10.2", "love-0.10.2-win32.zip"),
+        (LoveVersion::V0_10_2, Platform::MacOs, Bitness::X64) => ("0.10.2", "love-0.10.2-macosx-x64.zip"),
         _ => {
             bail!(
                 "Unsupported platform {}-{} for version {}",
