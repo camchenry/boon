@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `boon love` learned how to explicitly list versions through the subcommand `list`: `boon love list`.
+### Fixed
+- `boon download` now uses GitHub for binary downloads instead of Bitbucket, fixing any dead links resulting from the transition away from Bitbucket.
 
 ## [0.2.0] - 2020-03-15
 ### Added
