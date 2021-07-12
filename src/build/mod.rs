@@ -171,11 +171,13 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> Result<
 }
 
 fn should_exclude_file(file_name: &str, ignore_list: &HashSet<String>) -> bool {
+    // make uniform path format for windows
+    let uniform_file_name = file_name.replace("\\", "/");
     for exclude_pattern in ignore_list {
         // @Performance @TODO: Could cache regex in a multi-build to
         // avoid recompiling the same patterns
         let re = regex::Regex::new(exclude_pattern).expect("Could not compile regex pattern");
-        if re.is_match(file_name) {
+        if re.is_match(&uniform_file_name) {
             return true;
         }
     }

@@ -125,6 +125,33 @@ pub fn create_exe(
         }
     }
 
+    let mut dir_copy_options = fs_extra::dir::CopyOptions::new();
+    dir_copy_options.overwrite = true;
+    dir_copy_options.copy_inside = true;
+
+    for copy_desc in build_settings.win_copy_list.iter() {
+        let source_path = Path::new(&project.directory)
+            .join(&copy_desc.source_path.replace("/", "\\"));
+
+        if source_path.exists() {
+            let target_path_str: String = copy_desc.target_path.replace("/", "\\");
+            let target_path = &project
+                .get_release_path(build_settings)
+                .join(zip_output_file_name)
+                .join(&target_path_str);
+            let target_parent_dir = target_path.parent().unwrap();
+            if !target_parent_dir.exists() {
+                fs_extra::dir::create_all(target_parent_dir, false)?;
+            };
+
+            if source_path.is_file() {
+                fs_extra::file::copy(&source_path, &target_path, &copy_options)?;
+            } else if source_path.is_dir() {
+                fs_extra::dir::copy(&source_path, &target_path, &dir_copy_options)?;
+            }
+        }
+    }
+
     let paths = &[love_exe_path.as_path(), local_love_file_path.as_path()];
 
     let mut buffer = Vec::new();

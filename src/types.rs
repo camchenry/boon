@@ -7,11 +7,19 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
+pub struct FileCopyDesc {
+    pub source_path: String,
+    pub target_path: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct BuildSettings {
     pub output_directory: String,
     pub ignore_list: HashSet<String>,
     pub exclude_default_ignore_list: bool,
     pub targets: Vec<Target>,
+    pub win_copy_list: Vec<FileCopyDesc>,
+    pub macos_copy_list: Vec<FileCopyDesc>,
 }
 
 #[derive(Debug, Clone)]

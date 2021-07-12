@@ -173,11 +173,31 @@ fn get_settings() -> Result<(Config, BuildSettings)> {
         )
     }
 
+    let win_copy_list_data: Vec<Vec<String>> = settings.get("build.win_copy_list").unwrap();
+    let mut win_copy_list: Vec<FileCopyDesc> = Vec::new();
+    for copy_desc in win_copy_list_data.iter() {
+        win_copy_list.push(FileCopyDesc {
+            source_path: copy_desc[0].as_str().to_string(),
+            target_path: copy_desc[1].as_str().to_string()
+        });
+    }
+
+    let mut macos_copy_list: Vec<FileCopyDesc> = Vec::new();
+    let macos_copy_list_data: Vec<Vec<String>> = settings.get("build.macos_copy_list").unwrap();
+    for copy_desc in macos_copy_list_data.iter() {
+        macos_copy_list.push(FileCopyDesc {
+            source_path: copy_desc[0].as_str().to_string(),
+            target_path: copy_desc[1].as_str().to_string()
+        });
+    }
+
     let build_settings = BuildSettings {
         ignore_list,
         exclude_default_ignore_list: settings.get("build.exclude_default_ignore_list")?,
         output_directory: settings.get("build.output_directory")?,
         targets,
+        win_copy_list,
+        macos_copy_list,
     };
 
     Ok((settings, build_settings))
