@@ -62,8 +62,6 @@ ignore_list = [
     "release",
 ]
 
-# copy files from your project to release 
-
 # List of targets to build for
 # Possible values: "love", "windows", "macos", "all"
 targets = ["love"]
@@ -73,6 +71,7 @@ targets = ["love"]
 # ignore list to be completely overwritten.
 exclude_default_ignore_list = false
 
+# copy files from your project to release 
 win_copy_list = [
     # [ "project file path",  "release fodler file" ],
     # ["proejct_file",  "release_package/path/file"],
