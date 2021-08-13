@@ -99,7 +99,7 @@ impl Display for LoveVersion {
 
 impl Display for Bitness {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        use crate::types::Bitness::*;
+        use crate::types::Bitness::{X64, X86};
 
         let str = match self {
             X86 => "x86",
@@ -111,7 +111,7 @@ impl Display for Bitness {
 
 impl Display for Platform {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        use crate::types::Platform::*;
+        use crate::types::Platform::{MacOs, Windows};
 
         let str = match self {
             Windows => "Windows",

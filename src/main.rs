@@ -10,16 +10,16 @@
     clippy::implicit_return,
     clippy::print_stdout,
     clippy::module_name_repetitions,
-    clippy::result_expect_used
+    clippy::expect_used
 )]
 mod types;
-use crate::types::*;
+use crate::types::{Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target};
 
 mod build;
 mod download;
 
 use anyhow::{bail, Context, Result};
-use app_dirs::*;
+use app_dirs::{AppDataType, AppInfo, app_dir};
 use config::Config;
 use humansize::{file_size_opts, FileSize};
 use prettytable::{cell, row, Table};
@@ -106,10 +106,10 @@ fn main() -> Result<()> {
         BoonOpt::Love(subcmd) => {
             match subcmd {
                 LoveSubcommand::Download { version } => {
-                    love_download(version).context("Failed to download and install LÖVE")?
+                    love_download(version).context("Failed to download and install LÖVE")?;
                 }
                 LoveSubcommand::Remove { version } => {
-                    love_remove(version).context("Failed to remove LÖVE")?
+                    love_remove(version).context("Failed to remove LÖVE")?;
                 }
                 LoveSubcommand::List => {
                     // List installed versions
@@ -160,7 +160,7 @@ fn get_settings() -> Result<(Config, BuildSettings)> {
 
     let hash_targets: HashSet<String> = settings.get("build.targets").unwrap();
     let mut targets: Vec<Target> = Vec::new();
-    for target in hash_targets.iter() {
+    for target in &hash_targets {
         targets.push(
             match target.as_str() {
                 "love" => Target::love,
@@ -169,7 +169,7 @@ fn get_settings() -> Result<(Config, BuildSettings)> {
                 "all" => Target::all,
                 _ => bail!("{} is not a valid build target.", target),
             }
-        )
+        );
     }
 
     let build_settings = BuildSettings {
@@ -440,7 +440,7 @@ fn get_installed_love_versions() -> Result<Vec<String>> {
             // version, just in case some bogus directories
             // got in there somehow.
             if let Ok(version) = file_name.parse::<LoveVersion>() {
-                installed_versions.push(version.to_string())
+                installed_versions.push(version.to_string());
             }
         }
     }

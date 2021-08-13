@@ -1,10 +1,9 @@
-use crate::types::*;
+use crate::types::{LoveDownloadLocation, LoveVersion};
 
 use crate::APP_INFO;
-use app_dirs::*;
+use app_dirs::{AppDataType, app_dir};
 
 use crate::{Bitness, Platform};
-use reqwest;
 
 use anyhow::{bail, Context, Result};
 use std::fs::File;
