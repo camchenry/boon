@@ -1,7 +1,6 @@
 use crate::build::{Iterator, collect_zip_directory, get_love_file_name, get_love_version_path, get_output_filename, get_zip_output_filename};
 use crate::types::{Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project};
 use glob::glob;
-use remove_dir_all::remove_dir_all;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use std::collections::HashSet;
@@ -166,7 +165,7 @@ pub fn create_exe(
     })??;
     let path = PathBuf::new().join(src_dir);
     println!("Removing {}", path.display());
-    remove_dir_all(&path)?;
+    std::fs::remove_dir_all(&path)?;
 
     let build_metadata = std::fs::metadata(dst_file)
         .with_context(|| format!("Failed to read file metadata for '{}'", dst_file))?;
