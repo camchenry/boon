@@ -23,6 +23,7 @@ use app_dirs::{AppDataType, AppInfo, app_dir};
 use config::Config;
 use humansize::{file_size_opts, FileSize};
 use prettytable::{cell, row, Table};
+use remove_dir_all::remove_dir_all;
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -192,7 +193,7 @@ fn clean(build_settings: &BuildSettings) -> Result<()> {
 
     if release_dir_path.exists() {
         println!("Cleaning {}", release_dir_path.display());
-        std::fs::remove_dir_all(&release_dir_path).with_context(|| {
+        remove_dir_all(&release_dir_path).with_context(|| {
             format!(
                 "Could not clean release directory `{}`",
                 release_dir_path.display()
@@ -222,7 +223,7 @@ fn love_remove(version: LoveVersion) -> Result<()> {
         let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/")
             .context("Could not get app user data path")?;
         let path = PathBuf::new().join(output_file_path).join(&version);
-        std::fs::remove_dir_all(&path).with_context(|| {
+        remove_dir_all(&path).with_context(|| {
             format!(
                 "Could not remove installed version of LÖVE {} at path `{}`",
                 version,
