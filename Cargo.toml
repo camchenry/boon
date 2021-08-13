@@ -5,7 +5,7 @@ authors = ["Cameron McHenry <camchenry@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-zip = "0.5.5"
+zip = "0.5.13"
 clap = "2.33"
 walkdir = "2.3.1"
 app_dirs = "1.2.1"
