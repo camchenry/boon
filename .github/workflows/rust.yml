@@ -106,7 +106,7 @@ jobs:
           name: ${{ env.asset_name }}
       - name: Install LOVE
         run: |
-          brew --cask install love
+          brew install --cask love
           love --version
       - name: Build test game
         run: |
