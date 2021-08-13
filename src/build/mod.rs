@@ -1,6 +1,5 @@
 #![warn(
     clippy::all,
-    clippy::restriction,
     clippy::pedantic,
     clippy::nursery,
     clippy::cargo
@@ -237,7 +236,7 @@ fn collect_zip_directory(
     let file = File::create(&path)
         .with_context(|| format!("Could not create file path: '{}'", path.display()))?;
 
-    let walkdir = WalkDir::new(src_dir.to_string());
+    let walkdir = WalkDir::new(src_dir);
     let it = walkdir.into_iter();
 
     zip_directory(
