@@ -27,7 +27,7 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           rust-version: ${{ matrix.rust }}
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       - name: Run build
         run: cargo build --release --verbose
       - name: Create binary package (Unix)
@@ -47,7 +47,7 @@ jobs:
           path: ./${{ matrix.asset_name }}.zip
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v1-release
-        if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
+        if: github.ref == 'refs/heads/main' && matrix.rust == 'stable'
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ./${{ matrix.asset_name }}.zip
@@ -64,7 +64,7 @@ jobs:
       matrix:
         love: [11.2, 11.3, 0.10.2]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       - name: Download latest boon
         uses: actions/download-artifact@v1
         with:
@@ -99,7 +99,7 @@ jobs:
       matrix:
         love: [11.2, 11.3, 0.10.2]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       - name: Download latest boon
         uses: actions/download-artifact@v1
         with:
@@ -132,7 +132,7 @@ jobs:
       matrix:
         love: [11.2, 11.3, 0.10.2]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       - name: Download latest boon
         uses: actions/download-artifact@v1
         with:
