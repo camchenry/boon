@@ -24,36 +24,36 @@ jobs:
             asset_name: boon-macos-amd64
 
     steps:
-    - uses: hecrj/setup-rust-action@v1
-      with:
-        rust-version: ${{ matrix.rust }}
-    - uses: actions/checkout@master
-    - name: Run build
-      run: cargo build --release --verbose
-    - name: Create binary package (Unix)
-      if: matrix.rust == 'stable' && matrix.os != 'windows-latest'
-      run: |
-        zip --junk-paths ${{ matrix.asset_name }}.zip LICENSE README.md target/release/${{ matrix.artifact_name }}
-    - name: Create binary package (Windows)
-      if: matrix.rust == 'stable' && matrix.os == 'windows-latest'
-      run: |
-        Get-ChildItem -Path LICENSE, README.md, ./target/release/${{ matrix.artifact_name }} | Compress-Archive -DestinationPath ./${{ matrix.asset_name }}.zip
-      shell: powershell
-    - name: Upload binary artifact
-      if: matrix.rust == 'stable'
-      uses: actions/upload-artifact@v1
-      with:
-        name: ${{ matrix.asset_name }}
-        path: ./${{ matrix.asset_name }}.zip
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v1-release
-      if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./${{ matrix.asset_name }}.zip
-        asset_name: ${{ matrix.asset_name }}.zip
-        tag: latest
-        overwrite: true
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: ${{ matrix.rust }}
+      - uses: actions/checkout@master
+      - name: Run build
+        run: cargo build --release --verbose
+      - name: Create binary package (Unix)
+        if: matrix.rust == 'stable' && matrix.os != 'windows-latest'
+        run: |
+          zip --junk-paths ${{ matrix.asset_name }}.zip LICENSE README.md target/release/${{ matrix.artifact_name }}
+      - name: Create binary package (Windows)
+        if: matrix.rust == 'stable' && matrix.os == 'windows-latest'
+        run: |
+          Get-ChildItem -Path LICENSE, README.md, ./target/release/${{ matrix.artifact_name }} | Compress-Archive -DestinationPath ./${{ matrix.asset_name }}.zip
+        shell: powershell
+      - name: Upload binary artifact
+        if: matrix.rust == 'stable'
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ./${{ matrix.asset_name }}.zip
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v1-release
+        if: github.ref == 'refs/heads/master' && matrix.rust == 'stable'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./${{ matrix.asset_name }}.zip
+          asset_name: ${{ matrix.asset_name }}.zip
+          tag: latest
+          overwrite: true
   test-linux:
     needs: build
     runs-on: ubuntu-latest
@@ -64,31 +64,31 @@ jobs:
       matrix:
         love: [11.2, 11.3, 0.10.2]
     steps:
-    - uses: actions/checkout@master
-    - name: Download latest boon
-      uses: actions/download-artifact@v1
-      with:
-        name: ${{ env.asset_name }}
-    - name: Install LOVE
-      run: |
-        sudo add-apt-repository -y ppa:bartbes/love-stable
-        sudo apt-get update -y
-        sudo apt-get install -y love
-        love --version
-    - name: Build test game
-      run: |
-        cp ${{ env.asset_name }}/${{ env.asset_name }}.zip ./${{ env.asset_name }}.zip
-        unzip -o ${{ env.asset_name }}.zip
-        ./boon --version
-        ./boon love download ${{ matrix.love }}
-        ./boon build "./tests/game_build" --version ${{ matrix.love }}
-        love "./tests/game_build/release/My Game.love"
-        if ! grep -q "Linux" OK; then exit 1; fi
-        rm OK
-        ./boon build "./tests/game_build" --target love --version ${{ matrix.love }}
-        love "./tests/game_build/release/My Game.love"
-        if ! grep -q "Linux" OK; then exit 1; fi
-        rm OK
+      - uses: actions/checkout@master
+      - name: Download latest boon
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{ env.asset_name }}
+      - name: Install LOVE
+        run: |
+          sudo add-apt-repository -y ppa:bartbes/love-stable
+          sudo apt-get update -y
+          sudo apt-get install -y love
+          love --version
+      - name: Build test game
+        run: |
+          cp ${{ env.asset_name }}/${{ env.asset_name }}.zip ./${{ env.asset_name }}.zip
+          unzip -o ${{ env.asset_name }}.zip
+          ./boon --version
+          ./boon love download ${{ matrix.love }}
+          ./boon build "./tests/game_build" --version ${{ matrix.love }}
+          love "./tests/game_build/release/My Game.love"
+          if ! grep -q "Linux" OK; then exit 1; fi
+          rm OK
+          ./boon build "./tests/game_build" --target love --version ${{ matrix.love }}
+          love "./tests/game_build/release/My Game.love"
+          if ! grep -q "Linux" OK; then exit 1; fi
+          rm OK
   test-macos:
     needs: build
     runs-on: macos-latest
@@ -99,29 +99,29 @@ jobs:
       matrix:
         love: [11.2, 11.3, 0.10.2]
     steps:
-    - uses: actions/checkout@master
-    - name: Download latest boon
-      uses: actions/download-artifact@v1
-      with:
-        name: ${{ env.asset_name }}
-    - name: Install LOVE
-      run: |
-        brew cask install love
-        love --version
-    - name: Build test game
-      run: |
-        cp ${{ env.asset_name }}/${{ env.asset_name }}.zip ./${{ env.asset_name }}.zip
-        unzip -o ${{ env.asset_name }}.zip
-        ./boon --version
-        ./boon love download ${{ matrix.love }}
-        ./boon build "./tests/game_build" --version ${{ matrix.love }}
-        love "./tests/game_build/release/My Game.love"
-        if ! grep -q "OS X" OK; then exit 1; fi
-        rm OK
-        ./boon build "./tests/game_build" --target love --version ${{ matrix.love }}
-        love "./tests/game_build/release/My Game.love"
-        if ! grep -q "OS X" OK; then exit 1; fi
-        rm OK
+      - uses: actions/checkout@master
+      - name: Download latest boon
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{ env.asset_name }}
+      - name: Install LOVE
+        run: |
+          brew install --cask love
+          love --version
+      - name: Build test game
+        run: |
+          cp ${{ env.asset_name }}/${{ env.asset_name }}.zip ./${{ env.asset_name }}.zip
+          unzip -o ${{ env.asset_name }}.zip
+          ./boon --version
+          ./boon love download ${{ matrix.love }}
+          ./boon build "./tests/game_build" --version ${{ matrix.love }}
+          love "./tests/game_build/release/My Game.love"
+          if ! grep -q "OS X" OK; then exit 1; fi
+          rm OK
+          ./boon build "./tests/game_build" --target love --version ${{ matrix.love }}
+          love "./tests/game_build/release/My Game.love"
+          if ! grep -q "OS X" OK; then exit 1; fi
+          rm OK
   test-windows:
     needs: build
     runs-on: windows-latest

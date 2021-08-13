@@ -1,6 +1,5 @@
 #![warn(
     clippy::all,
-    clippy::restriction,
     clippy::pedantic,
     clippy::nursery,
     clippy::cargo
@@ -10,16 +9,15 @@
     clippy::missing_docs_in_private_items,
     clippy::implicit_return,
     clippy::print_stdout,
-    clippy::result_expect_used,
-    clippy::option_expect_used
+    clippy::expect_used,
 )]
 pub mod macos;
 pub mod windows;
 
-use crate::types::*;
+use crate::types::{Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project};
 
 use crate::APP_INFO;
-use app_dirs::*;
+use app_dirs::{AppDataType, get_app_dir};
 
 use std::io::prelude::*;
 use std::io::{Seek, Write};
@@ -62,7 +60,7 @@ pub fn get_love_version_file_name(
 
 /// Get file name of the .love file (same for all platforms)
 pub fn get_love_file_name(project: &Project) -> String {
-    format!("{}.love", project.title.to_owned())
+    format!("{}.love", project.title.clone())
 }
 
 /// Get file name for individual binary based on platform and bitness
@@ -237,7 +235,7 @@ fn collect_zip_directory(
     let file = File::create(&path)
         .with_context(|| format!("Could not create file path: '{}'", path.display()))?;
 
-    let walkdir = WalkDir::new(src_dir.to_string());
+    let walkdir = WalkDir::new(src_dir);
     let it = walkdir.into_iter();
 
     zip_directory(

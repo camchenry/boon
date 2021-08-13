@@ -1,7 +1,8 @@
-use crate::build::*;
-use crate::types::*;
+#![allow(clippy::too_many_lines)]
+use crate::build::{Iterator, collect_zip_directory, get_love_file_name, get_love_version_path, get_output_filename, get_zip_output_filename};
+use crate::types::{Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project};
 use glob::glob;
-use remove_dir_all::*;
+use remove_dir_all::remove_dir_all;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use std::collections::HashSet;
