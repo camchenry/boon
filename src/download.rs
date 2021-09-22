@@ -73,7 +73,7 @@ pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness)
                 .unwrap_or_else(|_| panic!("Could not get archive file by index '{}'", i));
             let mut outpath = output_file_path.clone();
             outpath.pop();
-            outpath.push(file.sanitized_name());
+            outpath.push(file.mangled_name());
 
             if file.name().ends_with('/') {
                 std::fs::create_dir_all(&outpath).expect("Could not create output directory path");

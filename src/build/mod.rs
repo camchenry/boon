@@ -209,7 +209,7 @@ where
                 ignore_list,
             )
         {
-            zip.start_file_from_path(name, options)?;
+            zip.start_file(name.to_str().expect("Could not do string conversion"), options)?;
             let mut f = File::open(path)?;
 
             f.read_to_end(&mut buffer)?;
