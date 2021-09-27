@@ -58,8 +58,8 @@ ignore_list = [
     ".exe$",
 
     # Boon-specific files and directories
-    "Boon.toml",
-    "release",
+    "^Boon.toml$",
+    "^release$",
 ]
 
 # List of targets to build for

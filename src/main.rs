@@ -350,7 +350,7 @@ fn build(
     }
 
     // Display build report
-    display_build_report(stats_list).context("Failed to display build report")?;
+    display_build_report(stats_list);
 
     Ok(())
 }
@@ -395,7 +395,7 @@ fn build_love(
     Ok(())
 }
 
-fn display_build_report(build_stats: Vec<BuildStatistics>) -> Result<()> {
+fn display_build_report(build_stats: Vec<BuildStatistics>) {
     let mut build_report_table = Table::new();
     build_report_table.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
     build_report_table.set_titles(row!["Build", "File", "Time", "Size"]);
@@ -420,7 +420,6 @@ fn display_build_report(build_stats: Vec<BuildStatistics>) -> Result<()> {
 
     println!();
     build_report_table.printstd();
-    Ok(())
 }
 
 fn get_installed_love_versions() -> Result<Vec<String>> {
