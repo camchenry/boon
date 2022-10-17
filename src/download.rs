@@ -112,6 +112,10 @@ fn get_love_download_location(
 ) -> Result<LoveDownloadLocation> {
     let release_location = "https://github.com/love2d/love/releases/download";
     let (version_string, release_file_name) = match (version, platform, bitness) {
+        (LoveVersion::V11_4, Platform::Windows, Bitness::X64) => ("11.4", "love-11.4-win64.zip"),
+        (LoveVersion::V11_4, Platform::Windows, Bitness::X86) => ("11.4", "love-11.4-win32.zip"),
+        (LoveVersion::V11_4, Platform::MacOs, Bitness::X64) => ("11.4", "love-11.4-macos.zip"),
+
         (LoveVersion::V11_3, Platform::Windows, Bitness::X64) => ("11.3", "love-11.3-win64.zip"),
         (LoveVersion::V11_3, Platform::Windows, Bitness::X86) => ("11.3", "love-11.3-win32.zip"),
         (LoveVersion::V11_3, Platform::MacOs, Bitness::X64) => ("11.3", "love-11.3-macos.zip"),

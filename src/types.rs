@@ -42,15 +42,16 @@ pub enum Bitness {
     X64, // 64 bit
 }
 
-const LOVE_VERSIONS: [&str; 5] = ["11.3", "11.2", "11.1", "11.0", "0.10.2"];
+const LOVE_VERSIONS: [&str; 6] = ["11.4", "11.3", "11.2", "11.1", "11.0", "0.10.2"];
 /// Represents a specific version of LÖVE2D
 #[derive(Copy, Clone, Debug, Primitive)]
 pub enum LoveVersion {
-    V11_3 = 0,
-    V11_2 = 1,
-    V11_1 = 2,
-    V11_0 = 3,
-    V0_10_2 = 4,
+    V11_4 = 0,
+    V11_3 = 1,
+    V11_2 = 2,
+    V11_1 = 3,
+    V11_0 = 4,
+    V0_10_2 = 5,
 }
 
 /// File info about remote download
@@ -86,7 +87,7 @@ impl FromStr for LoveVersion {
 }
 
 impl LoveVersion {
-    pub const fn variants() -> [&'static str; 5] {
+    pub const fn variants() -> [&'static str; 6] {
         LOVE_VERSIONS
     }
 }
