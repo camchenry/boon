@@ -13,7 +13,7 @@
     clippy::expect_used
 )]
 mod types;
-use crate::types::{Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target};
+use crate::types::{Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target, LOVE_VERSIONS};
 
 mod build;
 mod download;
@@ -51,7 +51,7 @@ enum BoonOpt {
             long,
             short,
             help = "Specify which target version of LÖVE to build for",
-            possible_values=&LoveVersion::variants(),
+            possible_values=LOVE_VERSIONS,
             default_value="11.5",
         )]
         version: LoveVersion,
@@ -69,12 +69,12 @@ enum BoonOpt {
 enum LoveSubcommand {
     #[structopt(about = "Download a version of LÖVE")]
     Download {
-        #[structopt(possible_values=&LoveVersion::variants())]
+        #[structopt(possible_values=LOVE_VERSIONS)]
         version: LoveVersion,
     },
     #[structopt(about = "Remove a version of LÖVE")]
     Remove {
-        #[structopt(possible_values=&LoveVersion::variants())]
+        #[structopt(possible_values=LOVE_VERSIONS)]
         version: LoveVersion,
     },
     #[structopt(about = "List installed LÖVE versions")]
