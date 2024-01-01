@@ -52,7 +52,7 @@ enum BoonOpt {
             short,
             help = "Specify which target version of LÖVE to build for",
             possible_values=&LoveVersion::variants(),
-            default_value="11.4",
+            default_value="11.5",
         )]
         version: LoveVersion,
         directory: String,
