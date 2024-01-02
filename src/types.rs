@@ -42,7 +42,8 @@ pub enum Bitness {
     X64, // 64 bit
 }
 
-const LOVE_VERSIONS: [&str; 6] = ["11.5", "11.4", "11.3", "11.2", "11.1", "11.0", "0.10.2"];
+pub static LOVE_VERSIONS: &[&str] = &["11.5", "11.4", "11.3", "11.2", "11.1", "11.0", "0.10.2"];
+
 /// Represents a specific version of LÖVE2D
 #[derive(Copy, Clone, Debug, Primitive)]
 pub enum LoveVersion {
@@ -84,12 +85,6 @@ impl FromStr for LoveVersion {
             .map(|(i, _)| Self::from_usize(i))
             .flatten()
             .ok_or(format!("{} is not a valid love version.", s))
-    }
-}
-
-impl LoveVersion {
-    pub const fn variants() -> [&'static str; 6] {
-        LOVE_VERSIONS
     }
 }
 
