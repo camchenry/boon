@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade Rust edition to 2021
+- Upgraded a number of dependencies to latest versions
+
 ## [0.3.0] - 2021-08-13
 
 ### Added
