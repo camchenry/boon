@@ -10,8 +10,7 @@ use std::io::Write;
 pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness) -> Result<()> {
     let file_info = get_love_download_location(version, platform, bitness).with_context(|| {
         format!(
-            "Could not get download location for LÖVE {} on {} {}",
-            version, platform, bitness
+            "Could not get download location for LÖVE {version} on {platform} {bitness}"
         )
     })?;
 
@@ -37,7 +36,7 @@ pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness)
         let prefix = output_file_path
             .parent()
             .expect("Could not get parent directory");
-        std::fs::create_dir_all(&prefix)
+        std::fs::create_dir_all(prefix)
             .with_context(|| format!("Could not create directory `{}`", prefix.display()))?;
 
         let file = File::create(&output_file_path)
@@ -71,7 +70,7 @@ pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness)
         for i in 0..archive.len() {
             let mut file = archive
                 .by_index(i)
-                .unwrap_or_else(|_| panic!("Could not get archive file by index '{}'", i));
+                .unwrap_or_else(|_| panic!("Could not get archive file by index '{i}'"));
             let mut outpath = output_file_path.clone();
             outpath.pop();
             outpath.push(
@@ -84,7 +83,7 @@ pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness)
             } else {
                 if let Some(p) = outpath.parent() {
                     if !p.exists() {
-                        std::fs::create_dir_all(&p)
+                        std::fs::create_dir_all(p)
                             .expect("Could not create output directory path");
                     }
                 }
@@ -160,8 +159,7 @@ fn get_love_download_location(
     };
 
     let url = format!(
-        "{}/{}/{}",
-        release_location, version_string, release_file_name
+        "{release_location}/{version_string}/{release_file_name}"
     );
     Ok(LoveDownloadLocation {
         filename: release_file_name.to_string(),

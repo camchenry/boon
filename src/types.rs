@@ -82,9 +82,8 @@ impl FromStr for LoveVersion {
             .iter()
             .enumerate()
             .find(|(_, v)| s == **v)
-            .map(|(i, _)| Self::from_usize(i))
-            .flatten()
-            .ok_or(format!("{} is not a valid love version.", s))
+            .and_then(|(i, _)| Self::from_usize(i))
+            .ok_or(format!("{s} is not a valid love version."))
     }
 }
 
@@ -102,7 +101,7 @@ impl Display for Bitness {
             X86 => "x86",
             X64 => "x64",
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
@@ -114,7 +113,7 @@ impl Display for Platform {
             Windows => "Windows",
             MacOs => "macOS",
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
@@ -133,7 +132,7 @@ impl Display for BuildSettings {
 }
 
 arg_enum! {
-    #[derive(Debug, Copy, Clone, PartialEq)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[allow(non_camel_case_types)]
     pub enum Target {
         love,
