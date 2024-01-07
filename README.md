@@ -49,8 +49,8 @@ If you don't initialize boon, you can still build your project normally, but the
 In order to build your project, you first need to download the versionof LÖVE that you are using for it.
 
 ```bash
-# Will download LÖVE 11.4 for building
-$ boon love download 11.4
+# Will download LÖVE 11.5 for building
+$ boon love download 11.5
 ```
 
 ### Building your project
