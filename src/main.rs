@@ -10,7 +10,7 @@
 mod types;
 use crate::build::get_boon_data_path;
 use crate::types::{
-    Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target, LOVE_VERSIONS
+    Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target, LOVE_VERSIONS,
 };
 
 mod build;
@@ -19,7 +19,7 @@ mod download;
 use anyhow::{bail, Context, Result};
 use config::Config;
 use humansize::{file_size_opts, FileSize};
-use prettytable::{cell, row, Table};
+use prettytable::{row, Table};
 use remove_dir_all::remove_dir_all;
 use std::collections::HashSet;
 use std::fs::File;
