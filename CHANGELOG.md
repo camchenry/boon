@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added support for downloading and building games with LÖVE version 11.5 (thanks to @gingerbeardman).
 
+### Updated
+
+- `boon love list` now displays a better message when there are no versions installed.
+
 ### Changed
 
 - Upgrade Rust edition to 2021

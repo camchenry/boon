@@ -108,9 +108,13 @@ fn main() -> Result<()> {
                     let installed_versions = get_installed_love_versions()
                         .context("Could not get installed LÖVE versions")?;
 
-                    println!("Installed versions:");
-                    for version in installed_versions {
-                        println!("* {version}");
+                    if installed_versions.is_empty() {
+                        println!("No LÖVE versions installed.");
+                    } else {
+                        println!("Installed versions:");
+                        for version in installed_versions {
+                            println!("* {version}");
+                        }
                     }
                 }
             }
@@ -233,13 +237,10 @@ fn love_download(version: LoveVersion) -> Result<()> {
     download::download_love(version, Platform::Windows, Bitness::X64).context(format!(
         "Could not download LÖVE {version} for Windows (64-bit)"
     ))?;
-    download::download_love(version, Platform::MacOs, Bitness::X64).context(format!(
-        "Could not download LÖVE {version} for macOS"
-    ))?;
+    download::download_love(version, Platform::MacOs, Bitness::X64)
+        .context(format!("Could not download LÖVE {version} for macOS"))?;
 
-    println!(
-        "\nLÖVE {version} is now available for building."
-    );
+    println!("\nLÖVE {version} is now available for building.");
 
     Ok(())
 }
@@ -277,9 +278,7 @@ fn build(
     if targets.contains(&Target::all) {
         println!("Building all targets from directory `{directory}`");
     } else {
-        println!(
-            "Building targets `{targets:?}` from directory `{directory}`"
-        );
+        println!("Building targets `{targets:?}` from directory `{directory}`");
     }
 
     let project = Project {
@@ -311,9 +310,7 @@ fn build(
     };
 
     build::init(&project, build_settings).with_context(|| {
-        format!(
-            "Failed to initialize the build process using build settings: {build_settings}"
-        )
+        format!("Failed to initialize the build process using build settings: {build_settings}")
     })?;
 
     let mut stats_list = Vec::new();
