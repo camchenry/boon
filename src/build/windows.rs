@@ -161,8 +161,7 @@ pub fn create_exe(
     )
     .with_context(|| {
         format!(
-            "Error while zipping files from `{}` to `{}`",
-            src_dir, dst_file
+            "Error while zipping files from `{src_dir}` to `{dst_file}`"
         )
     })??;
     let path = PathBuf::new().join(src_dir);
@@ -170,10 +169,10 @@ pub fn create_exe(
     remove_dir_all(&path)?;
 
     let build_metadata = std::fs::metadata(dst_file)
-        .with_context(|| format!("Failed to read file metadata for '{}'", dst_file))?;
+        .with_context(|| format!("Failed to read file metadata for '{dst_file}'"))?;
 
     Ok(BuildStatistics {
-        name: format!("Windows {}", bitness.to_string()),
+        name: format!("Windows {bitness}"),
         // @TODO: There is probably a better way here
         file_name: dst_file_path
             .file_name()

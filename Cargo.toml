@@ -3,6 +3,11 @@ name = "boon"
 version = "0.3.0"
 authors = ["Cameron McHenry <camchenry@users.noreply.github.com>"]
 edition = "2021"
+license = "MIT"
+description = "A cross-platform build tool for LÖVE"
+repository = "https://github.com/camchenry/boon"
+keywords = ["love2d", "love"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 zip = "0.6.6"

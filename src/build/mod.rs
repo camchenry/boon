@@ -81,11 +81,10 @@ pub fn get_zip_output_filename(project: &Project, platform: Platform, bitness: B
 }
 
 pub fn get_boon_data_path() -> Result<PathBuf> {
-    if let Some(project_dirs) = ProjectDirs::from("", "", "boon") {
-        Ok(project_dirs.data_local_dir().to_path_buf())
-    } else {
-        Err(anyhow::anyhow!("Could not get app data directory"))
-    }
+    ProjectDirs::from("", "", "boon").map_or_else(
+        || Err(anyhow::anyhow!("Could not get app data directory")),
+        |project_dirs| Ok(project_dirs.data_local_dir().to_path_buf()),
+    )
 }
 
 /// Get a platform-specific path to the app cache directory where LÖVE is stored.
@@ -95,12 +94,8 @@ pub fn get_love_version_path(
     bitness: Bitness,
 ) -> Result<PathBuf> {
     let filename = get_love_version_file_name(version, platform, bitness);
-    let boon_path = get_boon_data_path().with_context(|| {
-        format!(
-            "Could not get version directory for LÖVE version {}",
-            version.to_string()
-        )
-    })?;
+    let boon_path = get_boon_data_path()
+        .with_context(|| format!("Could not get version directory for LÖVE version {version}"))?;
     Ok(boon_path.join(version.to_string()).join(filename))
 }
 
@@ -155,19 +150,13 @@ pub fn create_love(project: &Project, build_settings: &BuildSettings) -> Result<
     let dst_file = love_path
         .to_str()
         .context("Could not do string conversion")?;
-    println!("Outputting LÖVE as {}", dst_file);
+    println!("Outputting LÖVE as {dst_file}");
 
-    collect_zip_directory(src_dir, dst_file, method, &build_settings.ignore_list).with_context(
-        || {
-            format!(
-                "Error while zipping files from `{}` to `{}`",
-                src_dir, dst_file
-            )
-        },
-    )??;
+    collect_zip_directory(src_dir, dst_file, method, &build_settings.ignore_list)
+        .with_context(|| format!("Error while zipping files from `{src_dir}` to `{dst_file}`"))??;
 
     let build_metadata = std::fs::metadata(dst_file)
-        .with_context(|| format!("Failed to read file metadata for '{}'", dst_file))?;
+        .with_context(|| format!("Failed to read file metadata for '{dst_file}'"))?;
 
     Ok(BuildStatistics {
         name: String::from("LÖVE"),
@@ -225,7 +214,7 @@ where
             let mut f = File::open(path)?;
 
             f.read_to_end(&mut buffer)?;
-            zip.write_all(&*buffer)?;
+            zip.write_all(&buffer)?;
             buffer.clear();
         }
     }
@@ -244,7 +233,7 @@ fn collect_zip_directory(
     }
 
     let path = Path::new(dst_file);
-    let file = File::create(&path)
+    let file = File::create(path)
         .with_context(|| format!("Could not create file path: '{}'", path.display()))?;
 
     let walkdir = WalkDir::new(src_dir);
