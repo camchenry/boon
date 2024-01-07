@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added support for downloading and building games with LÖVE version 11.5 (thanks to @gingerbeardman).
+
 ### Changed
 
 - Upgrade Rust edition to 2021
