@@ -10,7 +10,7 @@
 mod types;
 use crate::build::get_boon_data_path;
 use crate::types::{
-    Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target,
+    Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target, LOVE_VERSIONS
 };
 
 mod build;
@@ -48,8 +48,8 @@ enum BoonOpt {
             long,
             short,
             help = "Specify which target version of LÖVE to build for",
-            possible_values=&LoveVersion::variants(),
-            default_value="11.4",
+            possible_values=LOVE_VERSIONS,
+            default_value="11.5",
         )]
         version: LoveVersion,
         directory: String,
@@ -66,12 +66,12 @@ enum BoonOpt {
 enum LoveSubcommand {
     #[structopt(about = "Download a version of LÖVE")]
     Download {
-        #[structopt(possible_values=&LoveVersion::variants())]
+        #[structopt(possible_values=LOVE_VERSIONS)]
         version: LoveVersion,
     },
     #[structopt(about = "Remove a version of LÖVE")]
     Remove {
-        #[structopt(possible_values=&LoveVersion::variants())]
+        #[structopt(possible_values=LOVE_VERSIONS)]
         version: LoveVersion,
     },
     #[structopt(about = "List installed LÖVE versions")]
