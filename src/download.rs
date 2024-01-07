@@ -1,7 +1,5 @@
+use crate::build::get_boon_data_path;
 use crate::types::{LoveDownloadLocation, LoveVersion};
-
-use crate::APP_INFO;
-use app_dirs::{AppDataType, app_dir};
 
 use crate::{Bitness, Platform};
 
@@ -17,17 +15,14 @@ pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness)
         )
     })?;
 
-    let mut output_file_path = app_dir(
-        AppDataType::UserData,
-        &APP_INFO,
-        version.to_string().as_str(),
-    )
-    .with_context(|| {
-        format!(
-            "Could not get app user data directory path for version `{}`",
-            version.to_string()
-        )
-    })?;
+    // let mut output_file_path = app_dir(
+    //     AppDataType::UserData,
+    //     &APP_INFO,
+    //     version.to_string().as_str(),
+    // )
+
+    let mut output_file_path = get_boon_data_path()?;
+    output_file_path.push(version.to_string());
     output_file_path.push(&file_info.filename);
 
     // @TODO: Add integrity checking with hash
@@ -38,6 +33,12 @@ pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness)
 
         let mut resp = reqwest::blocking::get(&file_info.url)
             .with_context(|| format!("Could not fetch URL `{}`", &file_info.url))?;
+
+        let prefix = output_file_path
+            .parent()
+            .expect("Could not get parent directory");
+        std::fs::create_dir_all(&prefix)
+            .with_context(|| format!("Could not create directory `{}`", prefix.display()))?;
 
         let file = File::create(&output_file_path)
             .with_context(|| format!("Could not create file `{}`", output_file_path.display()))?;
@@ -73,7 +74,10 @@ pub fn download_love(version: LoveVersion, platform: Platform, bitness: Bitness)
                 .unwrap_or_else(|_| panic!("Could not get archive file by index '{}'", i));
             let mut outpath = output_file_path.clone();
             outpath.pop();
-            outpath.push(file.enclosed_name().expect("Failed to get well-formed zip file entry path."));
+            outpath.push(
+                file.enclosed_name()
+                    .expect("Failed to get well-formed zip file entry path."),
+            );
 
             if file.name().ends_with('/') {
                 std::fs::create_dir_all(&outpath).expect("Could not create output directory path");
@@ -132,9 +136,15 @@ fn get_love_download_location(
         (LoveVersion::V11_0, Platform::Windows, Bitness::X86) => ("11.0", "love-11.0.0-win32.zip"),
         (LoveVersion::V11_0, Platform::MacOs, Bitness::X64) => ("11.0", "love-11.0.0-macos.zip"),
 
-        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X64) => ("0.10.2", "love-0.10.2-win64.zip"),
-        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X86) => ("0.10.2", "love-0.10.2-win32.zip"),
-        (LoveVersion::V0_10_2, Platform::MacOs, Bitness::X64) => ("0.10.2", "love-0.10.2-macosx-x64.zip"),
+        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X64) => {
+            ("0.10.2", "love-0.10.2-win64.zip")
+        }
+        (LoveVersion::V0_10_2, Platform::Windows, Bitness::X86) => {
+            ("0.10.2", "love-0.10.2-win32.zip")
+        }
+        (LoveVersion::V0_10_2, Platform::MacOs, Bitness::X64) => {
+            ("0.10.2", "love-0.10.2-macosx-x64.zip")
+        }
         _ => {
             bail!(
                 "Unsupported platform {}-{} for version {}",
@@ -145,7 +155,10 @@ fn get_love_download_location(
         }
     };
 
-    let url = format!("{}/{}/{}", release_location, version_string, release_file_name);
+    let url = format!(
+        "{}/{}/{}",
+        release_location, version_string, release_file_name
+    );
     Ok(LoveDownloadLocation {
         filename: release_file_name.to_string(),
         url,
