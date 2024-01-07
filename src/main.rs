@@ -1,9 +1,4 @@
-#![warn(
-    clippy::all,
-    clippy::pedantic,
-    clippy::nursery,
-    clippy::cargo
-)]
+#![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
 #![allow(
     clippy::non_ascii_literal,
     clippy::missing_docs_in_private_items,
@@ -13,13 +8,15 @@
     clippy::expect_used
 )]
 mod types;
-use crate::types::{Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target, LOVE_VERSIONS};
+use crate::build::get_boon_data_path;
+use crate::types::{
+    Bitness, BuildSettings, BuildStatistics, LoveVersion, Platform, Project, Target, LOVE_VERSIONS
+};
 
 mod build;
 mod download;
 
 use anyhow::{bail, Context, Result};
-use app_dirs::{AppDataType, AppInfo, app_dir};
 use config::Config;
 use humansize::{file_size_opts, FileSize};
 use prettytable::{cell, row, Table};
@@ -80,11 +77,6 @@ enum LoveSubcommand {
     #[structopt(about = "List installed LÖVE versions")]
     List,
 }
-
-const APP_INFO: AppInfo = AppInfo {
-    name: "boon",
-    author: "boon",
-};
 
 const BOON_CONFIG_FILE_NAME: &str = "Boon.toml";
 const DEFAULT_CONFIG: &str = include_str!(concat!("../", "Boon.toml"));
@@ -161,15 +153,13 @@ fn get_settings() -> Result<(Config, BuildSettings)> {
     let hash_targets: HashSet<String> = settings.get("build.targets").unwrap();
     let mut targets: Vec<Target> = Vec::new();
     for target in &hash_targets {
-        targets.push(
-            match target.as_str() {
-                "love" => Target::love,
-                "windows" => Target::windows,
-                "macos" => Target::macos,
-                "all" => Target::all,
-                _ => bail!("{} is not a valid build target.", target),
-            }
-        );
+        targets.push(match target.as_str() {
+            "love" => Target::love,
+            "windows" => Target::windows,
+            "macos" => Target::macos,
+            "all" => Target::all,
+            _ => bail!("{} is not a valid build target.", target),
+        });
     }
 
     let build_settings = BuildSettings {
@@ -220,8 +210,7 @@ fn love_remove(version: LoveVersion) -> Result<()> {
         get_installed_love_versions().context("Could not get installed LÖVE versions")?;
 
     if installed_versions.contains(&version) {
-        let output_file_path = app_dir(AppDataType::UserData, &APP_INFO, "/")
-            .context("Could not get app user data path")?;
+        let output_file_path = get_boon_data_path()?;
         let path = PathBuf::new().join(output_file_path).join(&version);
         remove_dir_all(&path).with_context(|| {
             format!(
@@ -424,8 +413,7 @@ fn display_build_report(build_stats: Vec<BuildStatistics>) {
 
 fn get_installed_love_versions() -> Result<Vec<String>> {
     let mut installed_versions: Vec<String> = Vec::new();
-    let output_file_path =
-        app_dir(AppDataType::UserData, &APP_INFO, "/").expect("Could not get app directory path");
+    let output_file_path = get_boon_data_path()?;
     let walker = WalkDir::new(output_file_path).max_depth(1).into_iter();
     for entry in walker {
         let entry = entry.expect("Could not get DirEntry");
