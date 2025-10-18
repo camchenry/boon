@@ -179,47 +179,123 @@ fn should_exclude_file(file_name: &str, ignore_list: &HashSet<String>) -> bool {
     false
 }
 
+use std::collections::HashSet as StdHashSet;
+use std::fs::{self, Metadata};
+use std::os::unix::fs::FileTypeExt;
+use std::os::unix::fs::PermissionsExt;
+
 fn zip_directory<T>(
     it: &mut dyn Iterator<Item = DirEntry>,
     prefix: &str,
-    writer: T,
+    mut writer: T,
     method: zip::CompressionMethod,
     ignore_list: &HashSet<String>,
 ) -> zip::result::ZipResult<()>
 where
     T: Write + Seek,
 {
-    let mut zip = zip::ZipWriter::new(writer);
-    let options = FileOptions::default()
-        .compression_method(method)
-        .unix_permissions(0o644);
-
+    let mut zip = zip::ZipWriter::new(&mut writer);
     let mut buffer = Vec::new();
-    for entry in it {
-        let path = entry.path();
-        let name = path
-            .strip_prefix(Path::new(prefix))
-            .expect("Could not get path suffix");
 
-        if path.is_file()
-            && !should_exclude_file(
-                name.to_str().expect("Could not do string conversion"),
-                ignore_list,
-            )
-        {
-            zip.start_file(
-                name.to_str().expect("Could not do string conversion"),
-                options,
-            )?;
+    let mut visited_dirs: StdHashSet<PathBuf> = StdHashSet::new();
+    let mut zipped_paths: StdHashSet<PathBuf> = StdHashSet::new();
+
+    fn add_path_to_zip<T: Write + Seek>(
+        zip: &mut zip::ZipWriter<&mut T>,
+        path: &Path,
+        name: &Path,
+        method: zip::CompressionMethod,
+        ignore_list: &HashSet<String>,
+        buffer: &mut Vec<u8>,
+        visited_dirs: &mut StdHashSet<PathBuf>,
+        zipped_paths: &mut StdHashSet<PathBuf>,
+    ) -> zip::result::ZipResult<()> {
+        let meta = fs::symlink_metadata(path)?;
+        let file_type = meta.file_type();
+        let name_str = name.to_str().expect("Could not do string conversion");
+        if should_exclude_file(name_str, ignore_list) {
+            println!("Excluding {}", name.display());
+            return Ok(());
+        }
+
+        if file_type.is_symlink() {
+            let target = fs::read_link(path)?;
+            let target_path = if target.is_absolute() {
+                target
+            } else {
+                path.parent().unwrap_or(Path::new("")).join(target)
+            };
+            let canon = fs::canonicalize(&target_path)?;
+            if !zipped_paths.insert(canon.clone()) {
+                // Already zipped this file/dir
+                return Ok(());
+            }
+            let target_meta = fs::metadata(&target_path)?;
+            if target_meta.is_dir() {
+                // Avoid cycles
+                if !visited_dirs.insert(canon.clone()) {
+                    println!("Skipping already visited symlinked dir: {}", canon.display());
+                    return Ok(());
+                }
+                // Add directory entry
+                let dir_name = name_str.trim_end_matches('/').to_owned() + "/";
+                zip.add_directory(dir_name.clone(), FileOptions::default().compression_method(method).unix_permissions(0o777))?;
+                for entry in WalkDir::new(&target_path) {
+                    let entry = entry.map_err(|e| zip::result::ZipError::Io(e.into()))?;
+                    let entry_path = entry.path();
+                    let entry_name = name.join(entry_path.strip_prefix(&target_path).unwrap());
+                    add_path_to_zip(zip, entry_path, &entry_name, method, ignore_list, buffer, visited_dirs, zipped_paths)?;
+                }
+            } else {
+                // Symlink to file
+                zip.start_file(name_str, FileOptions::default().compression_method(method).unix_permissions(0o755))?;
+                let mut f = File::open(&target_path)?;
+                f.read_to_end(buffer)?;
+                zip.write_all(buffer)?;
+                buffer.clear();
+            }
+        } else if file_type.is_dir() {
+            let canon = fs::canonicalize(path)?;
+            if !zipped_paths.insert(canon.clone()) {
+                // Already zipped this dir
+                return Ok(());
+            }
+            // Avoid cycles
+            if !visited_dirs.insert(canon.clone()) {
+                println!("Skipping already visited dir: {}", canon.display());
+                return Ok(());
+            }
+            // Add directory entry
+            let dir_name = name_str.trim_end_matches('/').to_owned() + "/";
+            zip.add_directory(dir_name.clone(), FileOptions::default().compression_method(method).unix_permissions(0o777))?;
+            for entry in fs::read_dir(path).map_err(zip::result::ZipError::Io)? {
+                let entry = entry.map_err(zip::result::ZipError::Io)?;
+                let entry_path = entry.path();
+                let entry_name = name.join(entry.file_name());
+                add_path_to_zip(zip, &entry_path, &entry_name, method, ignore_list, buffer, visited_dirs, zipped_paths)?;
+            }
+        } else if file_type.is_file() {
+            let canon = fs::canonicalize(path)?;
+            if !zipped_paths.insert(canon.clone()) {
+                // Already zipped this file
+                return Ok(());
+            }
+            zip.start_file(name_str, FileOptions::default().compression_method(method).unix_permissions(0o666))?;
             let mut f = File::open(path)?;
-
-            f.read_to_end(&mut buffer)?;
-            zip.write_all(&buffer)?;
+            f.read_to_end(buffer)?;
+            zip.write_all(buffer)?;
             buffer.clear();
         }
+        Ok(())
+    }
+
+    for entry in it {
+        let path = entry.path();
+        let name = path.strip_prefix(Path::new(prefix)).expect("Could not get path suffix");
+        add_path_to_zip(&mut zip, &path, name, method, ignore_list, &mut buffer, &mut visited_dirs, &mut zipped_paths)?;
     }
     zip.finish()?;
-    Result::Ok(())
+    Ok(())
 }
 
 fn collect_zip_directory(
