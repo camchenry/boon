@@ -199,16 +199,20 @@ where
         let path = entry.path();
         let name = path
             .strip_prefix(Path::new(prefix))
-            .expect("Could not get path suffix");
+            .expect("Could not get path suffix")
+            .to_str()
+            .expect("Could not do string conversion")
+            .replace('\\', "/")
+            .to_string();
 
         if path.is_file()
             && !should_exclude_file(
-                name.to_str().expect("Could not do string conversion"),
+                &name,
                 ignore_list,
             )
         {
             zip.start_file(
-                name.to_str().expect("Could not do string conversion"),
+                &name,
                 options,
             )?;
             let mut f = File::open(path)?;
